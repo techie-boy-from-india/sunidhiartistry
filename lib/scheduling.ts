@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import type { TransactionSql } from "postgres";
 
 export class BookingProblem extends Error {
   constructor(message: string, public status: number) { super(message); this.name = "BookingProblem"; }
@@ -16,7 +16,7 @@ export function timesValid(start: string | null, end: string | null) {
 }
 export type ScheduleRow = { id: string; eventDate: string | null; startTime: string | null; endTime: string | null; status: string };
 
-type DbTx = Parameters<Parameters<ReturnType<typeof db>["begin"]>[0]>[0];
+type DbTx = TransactionSql<{}>;
 // The advisory lock serializes confirmation, rescheduling, and blocking for each calendar day.
 export async function lockDay(tx: DbTx, date: string) {
   await tx`SELECT pg_advisory_xact_lock(2603, (${date}::date - DATE '2000-01-01')::integer)`;
