@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { adminFromRequest, isSameOrigin } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
+import { enqueueBooking, sendQueuedEmail, emailEnabled } from "@/lib/notifications";
 import { dateValid, timesValid, lockDay, assertFree, fetchBookingForUpdate, schedulingResponse } from "@/lib/scheduling";
 export const runtime = "nodejs";
 const schema = z.object({
@@ -24,8 +25,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return reply("Choose a valid date and either both start/end times or neither. End must be after start.", 400);
   }
   try {
-    await db().begin(async tx => {
+    const noticeId=await db().begin(async tx => {
       const row = await fetchBookingForUpdate(tx, id);
+      if (row.eventDate === parsed.data.eventDate &&
+          row.startTime === parsed.data.startTime && row.endTime === parsed.data.endTime) return null;
       if (row.status === "confirmed" || row.status === "completed") {
         await lockDay(tx, parsed.data.eventDate);
         await assertFree(tx, parsed.data.eventDate, parsed.data.startTime, parsed.data.endTime, id);
@@ -34,7 +37,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         WHERE id=(SELECT enquiry_id FROM bookings WHERE id=${id}::bigint)`;
       await tx`UPDATE bookings SET start_time=${parsed.data.startTime}::time,
         end_time=${parsed.data.endTime}::time, updated_at=now() WHERE id=${id}::bigint`;
+      return enqueueBooking(tx,id,"rescheduled");
     });
-    return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
+    const email = noticeId ? await sendQueuedEmail(noticeId) : (emailEnabled() ? "unchanged" : "disabled");
+    return NextResponse.json({ ok: true, email }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { const { message, status } = schedulingResponse(error); return reply(message, status); }
 }
