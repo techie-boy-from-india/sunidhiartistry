@@ -79,6 +79,28 @@ Only actual changes trigger an email; saving the same status again will not crea
 6. Save a booking without changing its status; confirm no duplicate event.
 7. Test a general enquiry status → Contacted and confirm its message. Test retry behavior on a staging or test record only.
 
+## Phase 5 — Business analytics & new-request staff alerts
+
+**Analytics** is now available at `/admin?tab=analytics` for signed-in owners. No new SQL tables are required for analytics (uses existing Phase 3 booking amounts). Reports include the last six months of booking vs general enquiry volumes, service mix, manually recorded totals, outstanding balances, and the share of general enquiries marked Converted. Cancelled bookings are excluded from monetary totals.
+
+**Reporting caveat:** Monthly financial values are grouped by the **booking creation month**, because the current model has no dated payment ledger. They are **not monthly cash-flow/revenue statements**. "Received" is whatever an admin manually entered, not verified by Gmail or a payment gateway. Dashboard includes these disclosures.
+
+### Owner notification emails on new public requests
+
+This reuses the Phase 4 Gmail SMTP configuration. You do **not** need another mail service.
+
+1. Take a Neon database backup. Run all the SQL statements from `db/005_admin_alerts.sql` in the production SQL Editor, after the earlier migrations.
+2. In **Vercel → Project Settings → Environment Variables → Production**, add:
+   - `ADMIN_ALERT_EMAIL=` — the staff mailbox that receives new booking and enquiry alerts. Use your own inbox until the client has access.
+   - `ADMIN_NEW_REQUEST_ALERTS=true` — activate **only** after the SQL migration and SMTP settings are confirmed.
+   - Keep `EMAIL_NOTIFICATIONS_ENABLED=true` and the existing `SMTP_USER` / `SMTP_APP_PASSWORD`.
+3. Save and redeploy. A new public booking request or general enquiry will create a queued email notification to the configured staff address and trigger Gmail SMTP delivery after the HTTP response.
+4. Test with your **own** email/phone, check the owner's inbox and Admin → Emails activity, then remove or cancel the test booking.
+
+**Safety:** The public form uses an existing honeypot and new database-backed limits when owner alerts are enabled: at most eight requests per IP and three per email address in an hour. IP/email are stored as HMAC hashes, never in plain text in the limiter. This is not a full bot protection solution; use WAF/CAPTCHA if traffic grows. No alerts are sent to customers immediately upon public form submission. If the email send fails, the appointment still saves, and the owner can retry from Emails.
+
+If the migration hasn't run, **leave `ADMIN_NEW_REQUEST_ALERTS=false`**; otherwise new public submissions may fail. Existing customer update emails and analytics remain operational when owner alerts are off. The inbox to receive alerts can be different from the Gmail SMTP sending account.
+
 ## Setup (local and Vercel)
 
 1. Install Node.js 20.9+ (Node 22 LTS recommended).

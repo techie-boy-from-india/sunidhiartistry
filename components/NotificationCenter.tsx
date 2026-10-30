@@ -10,11 +10,12 @@ export type NotificationRecord = {
 type Props={
   records:NotificationRecord[];
   enabled:boolean;
+  ownerAlertsEnabled:boolean;
   pending:number;
   failed:number;
   warning:string;
 };
-export default function NotificationCenter({records,enabled,pending,failed,warning}:Props) {
+export default function NotificationCenter({records,enabled,ownerAlertsEnabled,pending,failed,warning}:Props) {
   const router=useRouter();
   const [busy,setBusy]=useState(false);
   const [result,setResult]=useState("");
@@ -32,9 +33,10 @@ export default function NotificationCenter({records,enabled,pending,failed,warni
   }
   return <section className="admin-panel notification-center">
     <div className="admin-panel-heading">
-      <div><span className="admin-panel-subtitle">CUSTOMER COMMUNICATIONS</span><h2>Email activity</h2></div>
+      <div><span className="admin-panel-subtitle">CUSTOMER COMMUNICATIONS</span><h2>Email activity & owner alerts</h2></div>
       <span className={"notification-pill "+(enabled?"on":"off")}>{enabled?"Automations active":"Setup required"}</span>
     </div>
+    <p className="notification-hint">Customer update emails: <strong>{enabled ? "Active" : "Off"}</strong> · New booking/enquiry alerts to the owner: <strong>{ownerAlertsEnabled ? "Active" : "Off"}</strong>. Owner alerts require the Phase 5 database migration and a configured ADMIN_ALERT_EMAIL.</p>
     <div className="notification-summary">
       <div><Mail size={20}/><strong>{pending}</strong><span>Pending / in progress</span></div>
       <div><RefreshCcw size={20}/><strong>{failed}</strong><span>Needs retry</span></div>
