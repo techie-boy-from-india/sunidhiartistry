@@ -1,9 +1,9 @@
 "use client";
 import { useState, type ChangeEvent } from "react";
 import Link from "next/link";
-import { Camera, CircleCheck, Eye, FilePenLine, ImagePlus, Package, Plus, RefreshCw, Save, Settings2, Star, Trash2 } from "lucide-react";
+import { Camera, CircleCheck, Eye, FilePenLine, ImagePlus, Package, Plus, Save, Settings2, Star, Trash2 } from "lucide-react";
 import Photo from "@/components/Photo";
-import type { CmsData,CmsSection,CmsService,CmsPackage,CmsPhoto,CmsTestimonial,CmsVersions } from "@/lib/cms";
+import type { CmsData,CmsSection,CmsVersions } from "@/lib/cms";
 
 const sections:{id:CmsSection;name:string;icon:typeof Camera}[]=[
   {id:"copy",name:"Website Text",icon:FilePenLine},
@@ -15,7 +15,6 @@ const sections:{id:CmsSection;name:string;icon:typeof Camera}[]=[
 ];
 const categories=["Bridal","Engagement","Reception","Party","Event"];
 type Field<K extends CmsSection>=CmsData[K];
-const imageSrc=(src:string)=>src.startsWith("https://")?src:"/images/"+src;
 function TextInput({title,value,onChange,multiline=false,required=true}:{
   title:string;value:string;onChange:(v:string)=>void;multiline?:boolean;required?:boolean
 }) {
@@ -92,7 +91,7 @@ export default function CmsEditor({initial,versions,ready}:{initial:CmsData;vers
   return <section className="cms-workspace">
     <div className="cms-heading"><div><span className="admin-panel-subtitle">THE CONTENT STUDIO</span><h2>Make your website yours.</h2><p>Update photos, services and business details directly from the dashboard. Preview the edits before you publish.</p></div>
       <Link href="/" className="cms-site-link" target="_blank" rel="noopener noreferrer"><Eye size={16}/> View live site ↗</Link></div>
-    {!ready&&<div className="admin-alert" role="alert">CMS isn't activated yet. Back up Neon and execute the complete <strong>db/006_cms.sql</strong> migration first. The existing website remains unchanged.</div>}
+    {!ready&&<div className="admin-alert" role="alert">CMS isn&apos;t activated yet. Back up Neon and execute the complete <strong>db/006_cms.sql</strong> migration first. The existing website remains unchanged.</div>}
     {notice&&<div className={failed?"admin-alert":"admin-toast"} role="status">{notice}</div>}
     <div className="cms-layout">
       <aside className="cms-nav">{sections.map(s=><button type="button" key={s.id}
@@ -165,7 +164,7 @@ export default function CmsEditor({initial,versions,ready}:{initial:CmsData;vers
             </div>)}</div>
           </div>}
           {part==="testimonials"&&<div className="cms-item-stack">
-            <p className="cms-tip">Only publish genuine testimonials with the customer's permission. They're hidden until marked Published.</p>
+            <p className="cms-tip">Only publish genuine testimonials with the customer&apos;s permission. They&apos;re hidden until marked Published.</p>
             {data.testimonials.map((t,i)=><div className="cms-edit-item" key={i}>
               <div className="cms-item-top"><strong>Review {i+1}</strong><button className="cms-danger" onClick={()=>dropItem("testimonials",i)} type="button"><Trash2 size={15}/> Remove</button></div>
               <TextInput title="Client display name" value={t.name} onChange={v=>changeItem("testimonials",i,{...t,name:v})}/>
