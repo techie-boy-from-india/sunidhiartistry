@@ -1,5 +1,6 @@
 import type { TransactionSql } from "postgres";
 import { db } from "@/lib/db";
+import nodemailer from "nodemailer";
 
 type Tx = TransactionSql<Record<string, never>>;
 export type BookingEmailEvent = "pending" | "confirmed" | "completed" | "cancelled" | "rescheduled" | "payment_updated";
@@ -126,13 +127,27 @@ export async function enqueueEnquiry(tx:Tx,id:string,event:EnquiryEmailEvent):Pr
   if (!row?.email) return null;
   return insert(tx,{event:"enquiry_"+event,enquiryId:id,email:row.email,content:enquiryTemplate(event,row)});
 }
+export function smtpConfigured(): boolean {
+  const email=process.env.SMTP_USER?.trim();
+  return Boolean(email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
+    process.env.SMTP_APP_PASSWORD?.trim());
+}
+
+function smtpErrorCode(error: unknown): string {
+  // Do not save raw SMTP errors: provider messages can contain private details.
+  const code = error && typeof error==="object" && "code" in error ? String(error.code) : "";
+  if (code === "EAUTH") return "Gmail authentication failed. Check SMTP_USER and App Password.";
+  if (code === "ETIMEDOUT" || code === "ECONNECTION" || code === "ESOCKET") return "Gmail SMTP connection timed out or failed.";
+  if (code === "EENVELOPE") return "Gmail rejected the recipient address.";
+  return "Gmail SMTP did not accept the message. Check Gmail Sent/Google security alerts.";
+}
+
 export async function sendQueuedEmail(id:string|null):Promise<DeliveryResult> {
   if (!emailEnabled()) return "disabled";
-  if (!id) return "queued";
-  const apiKey=process.env.RESEND_API_KEY;
-  const from=process.env.EMAIL_FROM;
-  if (!apiKey || !from) return "queued";
-  // Atomic claim; only one process at a time may send this event.
+  if (!id || !smtpConfigured()) return "queued";
+  const smtpUser=process.env.SMTP_USER!.trim();
+  const appPassword=process.env.SMTP_APP_PASSWORD!.replace(/\s/g,"");
+  // Atomic claim prevents two simultaneous API handlers sending the same event.
   let row: EmailRow | undefined;
   try {
     const rows=await db()<EmailRow[]>`
@@ -144,31 +159,45 @@ export async function sendQueuedEmail(id:string|null):Promise<DeliveryResult> {
     row=rows[0];
     if (!row) return "queued";
   } catch { return "queued"; }
+  const transporter=nodemailer.createTransport({
+    host:"smtp.gmail.com",
+    port:465,
+    secure:true,
+    auth:{ user:smtpUser, pass:appPassword },
+    connectionTimeout:8000,
+    greetingTimeout:6000,
+    socketTimeout:12000,
+    tls:{ minVersion:"TLSv1.2" }
+  });
   try {
     const replyTo=process.env.EMAIL_REPLY_TO?.trim();
-    const response=await fetch("https://api.resend.com/emails",{
-      method:"POST",
-      headers:{Authorization:"Bearer "+apiKey,"Content-Type":"application/json","Idempotency-Key":"sunidhi-notice-"+row.id},
-      body:JSON.stringify({from,to:[row.recipient_email],subject:row.subject,html:row.html_body,text:row.text_body,...(replyTo ? {reply_to:replyTo} : {})}),
-      signal:AbortSignal.timeout(12000),
-      cache:"no-store"
+    const info=await transporter.sendMail({
+      from:{ name:process.env.EMAIL_FROM_NAME?.trim().slice(0,80) || "Sunidhi Artistry", address:smtpUser },
+      to:row.recipient_email,
+      subject:row.subject,
+      html:row.html_body,
+      text:row.text_body,
+      ...(replyTo ? { replyTo } : {})
     });
-    const body:unknown=await response.json().catch(()=>null);
-    if(!response.ok) {
-      const code=body && typeof body==="object" && "name" in body ? String((body as {name:unknown}).name) : "provider_error";
-      throw new Error("Email provider rejected request ("+response.status+" "+code+").");
+    if (!info.accepted.map(x=>x.toLowerCase()).includes(row.recipient_email.toLowerCase())) {
+      throw Object.assign(new Error("Recipient was not accepted"),{code:"EENVELOPE"});
     }
-    const providerId=body && typeof body==="object" && "id" in body ? String((body as {id:unknown}).id).slice(0,100) : null;
-    await db()`UPDATE email_notifications SET status='sent',sent_at=now(),provider_id=${providerId},last_error=NULL
+    const messageId=info.messageId?.slice(0,250) || null;
+    await db()`UPDATE email_notifications SET status='sent',sent_at=now(),provider_id=${messageId},last_error=NULL
       WHERE id=${id}::bigint AND status='sending'`;
     return "sent";
-  } catch (err) {
-    const msg=(err instanceof Error ? err.message : "Email provider unavailable").slice(0,220);
-    try { await db()`UPDATE email_notifications SET status='failed',last_error=${msg} WHERE id=${id}::bigint AND status='sending'`; }
-    catch { /* The queue entry remains recoverable. */ }
+  } catch(error) {
+    const reason=smtpErrorCode(error);
+    try {
+      await db()`UPDATE email_notifications SET status='failed',last_error=${reason}
+        WHERE id=${id}::bigint AND status='sending'`;
+    } catch { /* Remains recoverable for an admin retry. */ }
     return "queued";
+  } finally {
+    transporter.close();
   }
 }
+
 export async function pendingNotifications() {
   if (!emailEnabled()) return { enabled:false,pending:0,failed:0 };
   const [row] = await db()<{ pending:number; failed:number }[]>`

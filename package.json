@@ -15,7 +15,8 @@
     "react-dom": "^19.2.0",
     "lucide-react": "^0.468.0",
     "zod": "^4.1.0",
-    "postgres": "^3.4.7"
+    "postgres": "^3.4.7",
+    "nodemailer": "^10.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
