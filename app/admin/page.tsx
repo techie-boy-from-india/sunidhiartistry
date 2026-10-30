@@ -5,6 +5,7 @@ import AdminDashboard, { type BookingRow, type EnquiryRow, type CustomerRow, typ
 import type { CalendarBooking, BlockedDay } from "@/components/AdminCalendar";
 import { emailEnabled, pendingNotifications } from "@/lib/notifications";
 import type { NotificationRecord } from "@/components/NotificationCenter";
+import { loadBusinessAnalytics, type BusinessAnalytics as BusinessAnalyticsData } from "@/lib/analytics";
 
 export const dynamic = "force-dynamic";
 type Search = { tab?: string; q?: string; page?: string; status?: string; month?: string };
@@ -13,7 +14,7 @@ const PAGE_SIZE = 25;
 export default async function AdminPage({ searchParams }: { searchParams: Promise<Search> }) {
   if (!await isAdmin()) redirect("/admin/login");
   const params = await searchParams;
-  const tab = ["overview","calendar","bookings","enquiries","customers","notifications"].includes(params.tab || "") ? params.tab! : "overview";
+  const tab = ["overview","calendar","bookings","enquiries","customers","analytics","notifications"].includes(params.tab || "") ? params.tab! : "overview";
   const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).formatToParts(new Date());
   const currentMonth = parts.find(p => p.type === "year")!.value + "-" + parts.find(p => p.type === "month")!.value;
   const candidateMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(params.month || "") ? params.month! : currentMonth;
@@ -31,6 +32,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const notificationState = { enabled:emailEnabled(),pending:0,failed:0 };
   const notificationRecords: NotificationRecord[] = [];
   let notificationWarning = "";
+  let analytics:BusinessAnalyticsData|null = null;
+  let analyticsWarning = "";
   let count = 0;
   let setupError = "";
   try {
@@ -49,6 +52,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       totalBookings: bookingTotals.total, pendingBookings: bookingTotals.pending,
       confirmedBookings: bookingTotals.confirmed, customers: enquiryTotals.customers
     };
+    if (tab === "analytics") {
+      try { analytics=await loadBusinessAnalytics(); }
+      catch { analyticsWarning="Unable to calculate reports from this database. Verify the Phase 3 migration and Neon connection."; }
+    }
     if (tab === "calendar") {
       try {
         calendarBookings = await sql<CalendarBooking[]>`
@@ -156,5 +163,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   return <AdminDashboard tab={tab} stats={stats} bookings={bookings} enquiries={enquiries} customers={customers}
     count={count} page={page} pageSize={PAGE_SIZE} q={q} status={status} setupError={setupError}
     month={month} calendarBookings={calendarBookings} blockedDates={blockedDates} calendarError={calendarError}
-    notificationState={notificationState} notificationRecords={notificationRecords} notificationWarning={notificationWarning}/>;
+    notificationState={notificationState} notificationRecords={notificationRecords} notificationWarning={notificationWarning}
+    analytics={analytics} analyticsWarning={analyticsWarning}/>;
 }
