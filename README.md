@@ -20,6 +20,18 @@ Premium mobile-first artist website and private booking-management dashboard. Bu
 
 **Not yet implemented:** live calendar availability and double-booking prevention, payment gateway, automated notifications, staff roles, file CMS. Never promise a customer a confirmed slot solely from an online form submission.
 
+## Phase 3 — Calendar and manual payment tracking (migration required)
+- New **Calendar** tab: view monthly pending/confirmed/completed appointments and block/unblock individual dates.
+- Date/time editor for each booking. Leave times blank for a whole-day reservation.
+- Prevent conflicting booking confirmations, reschedules, and blocked dates for a **single artist** via per-day PostgreSQL transaction locks.
+- WhatsApp shortcut in each booking. Uses a pre-filled message; does not auto-send.
+- Manually record agreed quote, received amount and outstanding balance. **No Razorpay integration or payment verification yet.** Do not mark an advance received unless independently verified.
+- General Enquiry inbox now excludes Booking Requests; customer directory includes both.
+
+**Migration:** In Sunidhi Artistry's Neon SQL Editor, run the entire **SQL contents** of `db/003_calendar.sql` after 001 and 002. Entering the filename alone is not valid SQL. Back up customer data before migrations. The public booking form and existing admin sections continue working before the migration, but new calendar controls and confirmation safety checks require it.
+
+**Business logic:** A booking without a start and end time occupies the entire calendar day. Timed bookings conflict only when their ranges overlap. Both confirmed and completed bookings count as occupied. The Calendar displays pending requests, but these do not reserve a slot. A manually blocked day cannot contain a confirmed/completed appointment. Date comparisons are made against stored event dates in the artist's local calendar (Asia/Kolkata). Multi-artist resource capacity is not yet supported.
+
 ## Setup (local and Vercel)
 
 1. Install Node.js 20.9+ (Node 22 LTS recommended).
@@ -39,6 +51,11 @@ The dashboard is deliberately inaccessible until credentials and DB have been co
 ## Smoke tests after deployment
 
 1. `npm run lint`, `npm run typecheck`, `npm run build` should all succeed.
+2. Run `db/003_calendar.sql` in Neon if not yet applied, then open Calendar and verify no migration warning.
+3. Create two pending bookings on the same day. Confirm one; attempting to confirm the other as a whole-day booking must return 409 and leave it pending.
+4. Create two timed bookings with adjacent non-overlapping time ranges; both can be confirmed. Overlapping ranges must fail.
+5. Block an empty day, then attempt to confirm a request there; it must fail. Unblock and confirm.
+6. Record a test quote/advance; refresh the page to ensure it persisted. This records notes only, not real payments.
 2. Visiting `/admin` while logged out should redirect to `/admin/login`.
 3. Invalid password should fail without showing data.
 4. Valid credentials should reveal only your business data.
