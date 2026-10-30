@@ -144,3 +144,19 @@ Booking confirmation is a **manual administrative state**, not a payment receipt
 - `npm run lint` — ESLint
 - `npm run typecheck` — TypeScript
 - `node scripts/hash-password.mjs` — safely create owner password hash
+
+
+## Phase 6 — Owner Website CMS (Neon + Vercel Blob)
+
+### Setup
+1. Take a Neon production backup. Run the **complete SQL contents** of `db/006_cms.sql` in Neon SQL Editor. It creates a versioned `cms_sections` table with default services/prices/packages, eight original photos, contact details, text and an empty reviews collection. Existing booking/payment/customer tables are untouched.
+2. After Vercel deploys the new code, sign in and open `/admin?tab=cms`. The owner can edit public homepage and about copy, add/retire services, edit package prices and inclusions, add consented testimonials, and change public contact/social links. Each section has its own **Publish Changes** button and protects against overwriting a newer revision.
+3. To upload photos, open **Vercel → Project → Storage → Create → Blob**, choose **Public** storage, connect it to the same Vercel project and ensure `BLOB_READ_WRITE_TOKEN` is present in **Production** environment variables. Redeploy after adding it. Then select **Website CMS → Portfolio Photos** and upload a client-approved JPG/PNG/WebP photo under **3 MB**.
+4. An uploaded photo is stored in Blob, then the gallery entry stays **unpublished until you click Publish Changes**. This is intentional to allow you to fix its alt text and category first. Services can select images already present in the gallery. Existing bundled portfolio images remain unchanged.
+5. Open `/`, `/portfolio`, `/services`, `/contact` and `/about` to verify the changes appear. Editing content in Neon does **not** require a redeployment.
+
+**Important:** Public pages keep the original content as a fallback until the migration is run, avoiding downtime. The admin UI warns if the migration is missing. The current implementation publishes section edits immediately; the editor's draft preview is local only. Version checks stop concurrent overwrites but there is not yet an approval workflow, media crop editor, automatic image resizing, or undo history. To roll back a change, edit and publish the previous values. Removing an image from the gallery does not physically delete its Blob object (to avoid breaking existing links), so review Blob storage periodically.
+
+**Safety:** Only the server's signed-in admin session can update CMS content or upload photos. The editor validates lengths, available categories, URLs and photo signatures. Public Blob URLs are accessible to anyone, so **never upload private or unapproved photographs**. Don't expose the Blob write token in browser code, and don't commit it to GitHub. Confirm all package prices, claims and testimonials with the client before publishing.
+
+**Cost/hosting:** Blob has usage allowances and paid usage beyond them, depending on your Vercel plan. Also, the Vercel Hobby plan's terms generally restrict commercial use; check whether your client's production website needs a Pro plan or an alternative commercial hosting arrangement.
