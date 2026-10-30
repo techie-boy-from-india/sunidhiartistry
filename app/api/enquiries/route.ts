@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { enqueueOwnerNewRequest, ownerAlertsConfigured, sendQueuedEmail } from "@/lib/notifications";
+import { enforceSubmissionLimits, SubmissionLimited } from "@/lib/public-submission-limit";
 
 export const runtime = "nodejs";
 const services = ["Bridal Makeup","Engagement Makeup","Reception Makeup","Party Makeup","Photoshoot Makeup","Event Makeup"] as const;
@@ -33,19 +35,32 @@ export async function POST(req: NextRequest) {
   if (!process.env.DATABASE_URL) return error("Enquiries are being configured. Please contact the artist directly.", 503);
   try {
     const sql = db();
-    await sql.begin(async tx => {
+    const alertReady=ownerAlertsConfigured();
+    const noticeId=await sql.begin(async tx => {
+      if(alertReady) await enforceSubmissionLimits(tx,req,value.email);
       const [enquiry] = await tx`
         INSERT INTO enquiries (name, email, phone, service, event_date, message, request_type)
         VALUES (${value.name}, ${value.email.toLowerCase()}, ${value.phone}, ${value.service},
           ${value.eventDate || null}, ${value.message}, ${value.requestType})
         RETURNING id
       `;
+      let bookingId:string|null=null;
       if (value.requestType === "booking") {
-        await tx`INSERT INTO bookings (enquiry_id) VALUES (${enquiry.id})`;
+        const [booking]=await tx<{id:string}[]>`
+          INSERT INTO bookings (enquiry_id) VALUES (${enquiry.id}) RETURNING id::text AS id
+        `;
+        bookingId=booking.id;
       }
+      return alertReady ?
+        enqueueOwnerNewRequest(tx,String(enquiry.id),value.requestType,bookingId) : null;
     });
+    if (noticeId) {
+      // Schedule delivery after the HTTP response; failed sends remain in the outbox.
+      after(async () => { await sendQueuedEmail(noticeId); });
+    }
     return NextResponse.json({ ok: true }, { status: 201, headers: { "Cache-Control": "no-store" } });
-  } catch {
+  } catch (e) {
+    if(e instanceof SubmissionLimited) return error(e.message,429);
     return error("We could not save the request. Please try again or contact us on WhatsApp.", 503);
   }
 }

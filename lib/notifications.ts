@@ -142,6 +142,49 @@ function smtpErrorCode(error: unknown): string {
   return "Gmail SMTP did not accept the message. Check Gmail Sent/Google security alerts.";
 }
 
+export function ownerAlertsConfigured(): boolean {
+  const address=process.env.ADMIN_ALERT_EMAIL?.trim();
+  return process.env.ADMIN_NEW_REQUEST_ALERTS === "true" &&
+    emailEnabled() && smtpConfigured() &&
+    Boolean(address && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(address));
+}
+
+export async function enqueueOwnerNewRequest(
+  tx:Tx, enquiryId:string, kind:"booking"|"enquiry", bookingId:string|null
+):Promise<string|null> {
+  if (!ownerAlertsConfigured()) return null;
+  const recipient=process.env.ADMIN_ALERT_EMAIL!.trim();
+  const [row]=await tx<{
+    name:string; email:string; phone:string; service:string;
+    eventDate:string|null; message:string;
+  }[]>`
+    SELECT name,email,phone,service,event_date::text AS "eventDate",message
+    FROM enquiries WHERE id=${enquiryId}::bigint
+  `;
+  if (!row) return null;
+  const isBooking=kind==="booking";
+  const heading=isBooking?"New booking request received":"New makeup enquiry received";
+  const content=buildContent({
+    recipient:"Sunidhi Artistry team",
+    heading,
+    subtitle:isBooking ?
+      "A customer has requested an appointment. Please check the dashboard, confirm availability and follow up." :
+      "A new customer enquiry has arrived. Please review the details and follow up.",
+    subject:"Sunidhi Artistry | "+(isBooking?"New booking request":"New enquiry")+" — "+row.service,
+    rows:[
+      ["Customer",row.name],["Email",row.email],["Phone",row.phone],
+      ["Service",row.service],["Event date",localDate(row.eventDate)],
+      ["Message",row.message.slice(0,600) || "Not provided"],
+      ["Manage","Sign in to the private admin dashboard: "+siteUrl()+"/admin?tab="+(isBooking?"bookings":"enquiries")]
+    ],
+    closing:"This is an internal staff alert. The appointment is not confirmed automatically."
+  });
+  return insert(tx,{
+    event:isBooking?"admin_booking_received":"admin_enquiry_received",
+    bookingId:bookingId||undefined,enquiryId,email:recipient,content
+  });
+}
+
 export async function sendQueuedEmail(id:string|null):Promise<DeliveryResult> {
   if (!emailEnabled()) return "disabled";
   if (!id || !smtpConfigured()) return "queued";
