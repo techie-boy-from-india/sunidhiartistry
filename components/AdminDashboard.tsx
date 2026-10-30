@@ -3,15 +3,18 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import BookingTools from "@/components/BookingTools";
+import AdminCalendar, { type CalendarBooking, type BlockedDay } from "@/components/AdminCalendar";
 import { ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3, LayoutDashboard, LogOut, Mail, Menu, MessageCircle, Search, Sparkles, UserRound, Users, X } from "lucide-react";
 
 export type AdminStats = { totalEnquiries: number; newEnquiries: number; totalBookings: number; pendingBookings: number; confirmedBookings: number; customers: number };
-export type BookingRow = { id: string; status: string; name: string; email: string; phone: string; service: string; eventDate: string | null; message: string; createdAt: string };
+export type BookingRow = { id: string; status: string; name: string; email: string; phone: string; service: string; eventDate: string | null; message: string; createdAt: string; startTime: string | null; endTime: string | null; totalRupees: number; receivedRupees: number };
 export type EnquiryRow = BookingRow & { requestType: string };
 export type CustomerRow = { email: string; name: string; phone: string; requestCount: number; lastContact: string };
-type Props = { tab: string; stats: AdminStats; bookings: BookingRow[]; enquiries: EnquiryRow[]; customers: CustomerRow[]; count: number; page: number; pageSize: number; q: string; status: string; setupError: string };
+type Props = { tab: string; stats: AdminStats; bookings: BookingRow[]; enquiries: EnquiryRow[]; customers: CustomerRow[]; count: number; page: number; pageSize: number; q: string; status: string; setupError: string; month: string; calendarBookings: CalendarBooking[]; blockedDates: BlockedDay[]; calendarError: string };
 const navigation = [
   { key: "overview", text: "Overview", icon: LayoutDashboard },
+  { key: "calendar", text: "Calendar", icon: CalendarDays },
   { key: "bookings", text: "Bookings", icon: CalendarDays },
   { key: "enquiries", text: "Enquiries", icon: MessageCircle },
   { key: "customers", text: "Customers", icon: Users }
@@ -22,7 +25,7 @@ function Person({ name, email, phone }: { name: string; email: string; phone: st
 }
 function NoRows({ message }: { message: string }) { return <div className="admin-empty"><Sparkles size={25}/><strong>Nothing here yet</strong><p>{message}</p></div>; }
 
-export default function AdminDashboard({ tab, stats, bookings, enquiries, customers, count, page, pageSize, q, status, setupError }: Props) {
+export default function AdminDashboard({ tab, stats, bookings, enquiries, customers, count, page, pageSize, q, status, setupError, month, calendarBookings, blockedDates, calendarError }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState(q);
   const [busy, setBusy] = useState("");
@@ -31,6 +34,7 @@ export default function AdminDashboard({ tab, stats, bookings, enquiries, custom
   function link(nextTab = tab, nextPage = 1, nextQuery = q, nextStatus = status) {
     const params = new URLSearchParams();
     params.set("tab", nextTab);
+    if (nextTab === "calendar") params.set("month", month);
     if (nextPage > 1) params.set("page", String(nextPage));
     if (nextQuery) params.set("q", nextQuery);
     if (nextStatus !== "all") params.set("status", nextStatus);
@@ -53,16 +57,17 @@ export default function AdminDashboard({ tab, stats, bookings, enquiries, custom
     await fetch("/api/admin/session", { method: "DELETE" }).catch(() => undefined);
     router.replace("/admin/login"); router.refresh();
   }
-  const tabTitle = ({ overview: "Your business at a glance", bookings: "Booking management", enquiries: "Enquiry inbox", customers: "Your customers" } as Record<string,string>)[tab];
+  const tabTitle = ({ overview: "Your business at a glance", calendar: "Your booking calendar", bookings: "Booking management", enquiries: "Enquiry inbox", customers: "Your customers" } as Record<string,string>)[tab];
   const statusOptions = tab === "bookings" ? ["all","pending","confirmed","completed","cancelled"] : ["all","new","contacted","quoted","converted","lost"];
   const format = (row: BookingRow) => row.eventDate ? new Date(row.eventDate + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Not provided";
   function tableBookings(rows: BookingRow[]) {
     if (!rows.length) return <NoRows message="Booking requests will appear here as customers submit them."/>;
-    return <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>CLIENT</th><th>SERVICE / EVENT</th><th>RECEIVED</th><th>STATUS</th><th>CONTACT</th></tr></thead>
+    return <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>CLIENT</th><th>SERVICE / EVENT</th><th>RECEIVED</th><th>PAYMENTS</th><th>STATUS</th><th>CONTACT</th></tr></thead>
     <tbody>{rows.map(b => <tr key={b.id}>
       <td><Person name={b.name} email={b.email} phone={b.phone}/></td>
-      <td><strong>{b.service}</strong><span>{format(b)}</span>{b.message && <details className="admin-details"><summary>View notes</summary><p>{b.message}</p></details>}</td>
+      <td><strong>{b.service}</strong><span>{format(b)} · {b.startTime && b.endTime ? b.startTime + "–" + b.endTime : "Whole day"}</span>{b.message && <details className="admin-details"><summary>View notes</summary><p>{b.message}</p></details>}<BookingTools row={b}/></td>
       <td className="admin-cell-muted">{b.createdAt}</td>
+      <td className="admin-payment-cell"><strong>₹{Number(b.receivedRupees).toLocaleString("en-IN")} / ₹{Number(b.totalRupees).toLocaleString("en-IN")}</strong><small>Manually tracked</small></td>
       <td><Badge status={b.status}/><select aria-label={"Update booking status for " + b.name} className="admin-status-select" value={b.status} disabled={busy === "bookings" + b.id} onChange={e => update("bookings", b.id, e.target.value)}>{["pending","confirmed","completed","cancelled"].map(s => <option key={s} value={s}>{s}</option>)}</select></td>
       <td><a className="admin-mail" href={"mailto:" + b.email}><Mail size={17}/></a></td>
     </tr>)}</tbody></table></div>;
@@ -98,7 +103,7 @@ export default function AdminDashboard({ tab, stats, bookings, enquiries, custom
           <div className="admin-stat"><div><span>NEW ENQUIRIES</span><MessageCircle size={19}/></div><strong>{stats.newEnquiries}</strong><small>Need a follow-up</small></div>
           <div className="admin-stat"><div><span>CUSTOMERS</span><Users size={19}/></div><strong>{stats.customers}</strong><small>Unique customer emails</small></div>
         </section>
-        {tab === "overview" ? <>
+        {tab === "calendar" ? <AdminCalendar month={month} bookings={calendarBookings} blocked={blockedDates} error={calendarError}/> : tab === "overview" ? <>
           <section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-panel-subtitle">BOOKINGS</span><h2>Appointments to review</h2></div><Link href={link("bookings",1,"","all")}>View all bookings <ArrowRight size={17}/></Link></div>{tableBookings(bookings)}</section>
           <section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-panel-subtitle">ENQUIRIES</span><h2>Latest customer messages</h2></div><Link href={link("enquiries",1,"","all")}>View all enquiries <ArrowRight size={17}/></Link></div>{tableEnquiries(enquiries)}</section>
         </> : <>
