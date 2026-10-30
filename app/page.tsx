@@ -117,7 +117,7 @@ export default function Home() {
     </div></section>
 
     <section className="wrap lux-end-section"><div className="lux-end-card">
-      <div className="lux-end-orb" aria-hidden="true"/><span className="lux-eyebrow">LET'S MAKE MAGIC</span>
+      <div className="lux-end-orb" aria-hidden="true"/><span className="lux-eyebrow">LET&apos;S MAKE MAGIC</span>
       <Star size={28} fill="currentColor" className="lux-end-star" aria-hidden="true"/>
       <h2>Your story deserves<br/><em>beautiful details.</em></h2>
       <p>Tell us about your special day and we&apos;ll help you make it even more memorable. Dates are confirmed after consultation and availability checks.</p>
