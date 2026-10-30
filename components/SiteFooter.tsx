@@ -1,5 +1,32 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Instagram, Mail, MapPin, Phone, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Heart, Instagram, Mail, MapPin, MessageCircle } from "lucide-react";
 import { contact } from "@/lib/site";
-export default function SiteFooter(){return <footer className="footer"><div className="footer-grid wrap"><div><Link href="/" className="footer-brand"><Image src="/images/sunidhi-logo.webp" alt="Sunidhi Artistry" width={66} height={66}/> Sunidhi Artistry</Link><p>Professional bridal & event makeup artist creating elegant, personalised looks that enhance your natural beauty.</p></div><div><h4>Quick links</h4><Link href="/">Home</Link><Link href="/services">Services & Pricing</Link><Link href="/portfolio">Portfolio</Link><Link href="/about">About</Link><Link href="/contact">Contact</Link></div><div><h4>Contact</h4><a href={contact.whatsapp}><Phone size={14}/>{contact.phone}</a><a href={"mailto:"+contact.email}><Mail size={14}/>{contact.email}</a><p><MapPin size={14}/>{contact.city}</p></div><div><h4>Follow the beauty</h4><a target="_blank" rel="noopener noreferrer" href={contact.instagram}><Instagram size={17}/> {contact.instagramHandle} <ArrowUpRight size={14}/></a><Link href="/contact#book" className="pill footer-cta">ENQUIRE NOW ↗</Link></div></div><div className="footer-bottom wrap"><span>© {new Date().getFullYear()} Sunidhi Artistry. All rights reserved.</span><span>Beautiful moments, thoughtfully made.</span></div></footer>}
+
+export default function SiteFooter() {
+  return <footer className="footer lux-footer">
+    <div className="lux-footer-glow" aria-hidden="true"/>
+    <div className="wrap lux-footer-hero">
+      <div><span className="lux-eyebrow lux-eyebrow-light">YOUR MOMENT. OUR ARTISTRY.</span>
+        <h2>Every beautiful story<br/>begins with <em>a hello.</em></h2>
+      </div>
+      <Link href="/contact#book" className="lux-footer-cta">Let&apos;s plan your look <ArrowUpRight size={20}/></Link>
+    </div>
+    <div className="wrap lux-footer-rule"/>
+    <div className="wrap lux-footer-grid">
+      <div className="lux-footer-about">
+        <Link href="/" className="lux-footer-brand"><Image src="/images/sunidhi-logo.webp" width={48} height={48} alt=""/> Sunidhi Artistry</Link>
+        <p>Modern bridal beauty with a personal touch. Thoughtfully crafted looks for the moments you never want to forget.</p>
+        <span className="lux-footer-signature">Made with love in Bihar ♡</span>
+      </div>
+      <div><h3>EXPLORE</h3><Link href="/">Home</Link><Link href="/services">Services & pricing</Link><Link href="/portfolio">Our work</Link><Link href="/about">Meet the artist</Link><Link href="/bridal-makeup-nawada">Bridal makeup Nawada</Link><Link href="/party-makeup-nawada">Party makeup Nawada</Link></div>
+      <div><h3>GET IN TOUCH</h3><a href={"mailto:" + contact.email}><Mail size={15}/>{contact.email}</a>
+        <a href={contact.whatsapp} target="_blank" rel="noopener noreferrer"><MessageCircle size={15}/>{contact.phone}</a>
+        <span className="lux-footer-address"><MapPin size={15}/>{contact.city}</span></div>
+      <div><h3>FOLLOW ALONG</h3><a href={contact.instagram} target="_blank" rel="noopener noreferrer"><Instagram size={17}/> Instagram <ArrowUpRight size={14}/></a>
+        <p>Real faces. Beautiful details. A little everyday magic.</p></div>
+    </div>
+    <div className="wrap lux-footer-bottom"><span>© {new Date().getFullYear()} Sunidhi Artistry. All rights reserved.</span>
+      <span>Crafted for beautiful moments <Heart size={13} fill="currentColor" aria-hidden="true"/></span></div>
+  </footer>;
+}

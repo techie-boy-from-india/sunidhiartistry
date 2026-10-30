@@ -1,6 +1,27 @@
-"use client";
-import { useState } from "react";
-import Photo from "@/components/Photo";
-import { photos } from "@/lib/site";
-const cats=["All","Bridal","Engagement","Reception","Party","Event"] as const;
-export default function Portfolio(){const [filter,setFilter]=useState<string>("All");const shown=filter==="All"?photos:photos.filter(p=>p.category===filter);return <main><section className="page-banner centered"><span className="chip">OUR PORTFOLIO</span><h1>Real Brides, <em>Real</em> Moments.</h1><p>A small window into the beautiful faces we&apos;ve had the joy of working on.</p></section><section className="wrap section-space"><div className="filters" role="group" aria-label="Filter portfolio">{cats.map(c=><button key={c} type="button" onClick={()=>setFilter(c)} aria-pressed={filter===c} className={filter===c?"active":""}>{c}</button>)}</div><div className="portfolio-grid">{shown.map(p=><div className="portfolio-item" key={p.src}><Photo name={p.src} alt={p.alt}/><span>{p.category}</span></div>)}</div></section><section className="centered section-space blush-block"><span className="chip">BEFORE & AFTER</span><h2>The <em>Transformation</em></h2><p>Transformation previews and video reels will be added when the artist provides approved media.</p></section></main>}
+import type { Metadata } from "next";
+import Link from "next/link";
+import JsonLd from "@/components/JsonLd";
+import PortfolioGallery from "@/components/PortfolioGallery";
+import { breadcrumbs, pageSeo } from "@/lib/seo";
+
+export const metadata:Metadata = pageSeo({
+  path:"/portfolio",
+  title:"Bridal & Party Makeup Portfolio in Nawada, Bihar",
+  description:"Explore real bridal, engagement, reception and party makeup photographs from Sunidhi Artistry, makeup artist in Nawada, Bihar. Enquire about your date.",
+  image:"/images/real-bridal-4.webp"
+});
+export default function Portfolio() {
+  return <main>
+    <JsonLd data={breadcrumbs([{name:"Home",path:"/"},{name:"Makeup Portfolio",path:"/portfolio"}])}/>
+    <section className="page-banner centered"><span className="chip">REAL BRIDAL & OCCASION LOOKS</span>
+      <h1>Makeup Portfolio from <em>Nawada, Bihar</em></h1>
+      <p>Explore real bridal, engagement and party makeup looks by Sunidhi Artistry. Find inspiration for your wedding, celebration or next special event.</p>
+    </section>
+    <PortfolioGallery/>
+    <section className="centered section-space blush-block"><span className="chip">YOUR SPECIAL DAY</span>
+      <h2>Inspired by a <em>particular look?</em></h2>
+      <p>Tell us your favourite style and event date. Explore <Link href="/bridal-makeup-nawada">bridal makeup in Nawada</Link> or send a direct booking request.</p>
+      <Link href="/contact#book" className="pill">ENQUIRE ABOUT YOUR DATE ↗</Link>
+    </section>
+  </main>;
+}

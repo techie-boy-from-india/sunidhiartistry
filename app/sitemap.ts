@@ -1,2 +1,19 @@
 import type { MetadataRoute } from "next";
-export default function sitemap():MetadataRoute.Sitemap{const base=process.env.NEXT_PUBLIC_SITE_URL||"https://sunidhiartistry-38na.vercel.app";return ["/","/services","/portfolio","/about","/contact"].map((p,i)=>({url:base+p,lastModified:new Date(),changeFrequency:"monthly" as const,priority:i===0?1:0.7}));}
+import { absoluteUrl } from "@/lib/seo";
+
+const publicRoutes = [
+  { path: "/", priority: 1 },
+  { path: "/bridal-makeup-nawada", priority: 0.9 },
+  { path: "/services", priority: 0.9 },
+  { path: "/party-makeup-nawada", priority: 0.8 },
+  { path: "/portfolio", priority: 0.8 },
+  { path: "/about", priority: 0.65 },
+  { path: "/contact", priority: 0.85 }
+];
+export default function sitemap(): MetadataRoute.Sitemap {
+  return publicRoutes.map(({path,priority}) => ({
+    url: absoluteUrl(path),
+    changeFrequency: "monthly",
+    priority
+  }));
+}
