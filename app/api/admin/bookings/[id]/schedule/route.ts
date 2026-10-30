@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { adminFromRequest, isSameOrigin } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
-import { BookingProblem, dateValid, timesValid, lockDay, assertFree, fetchBookingForUpdate, schedulingResponse } from "@/lib/scheduling";
+import { dateValid, timesValid, lockDay, assertFree, fetchBookingForUpdate, schedulingResponse } from "@/lib/scheduling";
 export const runtime = "nodejs";
 const schema = z.object({
   eventDate: z.string(),
