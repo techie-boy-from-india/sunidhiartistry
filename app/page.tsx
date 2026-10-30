@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarHeart, Check, Crown, Gem, Heart, Instagram, MessageCircle, ShieldCheck, Sparkles, Star } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarHeart, Check, Gem, Heart, Instagram, MessageCircle, ShieldCheck, Sparkles, Star } from "lucide-react";
 import Photo from "@/components/Photo";
 import { contact, faqs, photos, services } from "@/lib/site";
 

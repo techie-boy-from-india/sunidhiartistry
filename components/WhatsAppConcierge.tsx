@@ -66,8 +66,8 @@ export default function WhatsAppConcierge() {
       aria-expanded={open} aria-controls="sunidhi-whatsapp-panel" aria-label={open ? "Close WhatsApp chat options" : "Open WhatsApp chat options"}
       onClick={() => setOpen(value => !value)}>
       <span className="wa-launch-icon">{open ? <X size={23}/> : <WhatsAppMark size={24}/>}</span>
-      <span className="wa-launch-copy"><strong>Chat with us</strong><small>Usually responds personally</small></span>
-      <span className="wa-online" aria-hidden="true"/>
+      <span className="wa-launch-copy"><strong>Chat with us</strong><small>Makeup & bookings</small></span>
+      <span className="wa-launch-spark" aria-hidden="true">✧</span>
     </button>
   </div>;
 }
