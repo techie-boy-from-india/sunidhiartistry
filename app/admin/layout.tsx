@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./admin.css";
+import "./email-notification.css";
 
 export const metadata: Metadata = {
   title: "Business Dashboard | Sunidhi Artistry",
