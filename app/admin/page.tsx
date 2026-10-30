@@ -3,7 +3,7 @@ import { isAdmin } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import AdminDashboard, { type BookingRow, type EnquiryRow, type CustomerRow, type AdminStats } from "@/components/AdminDashboard";
 import type { CalendarBooking, BlockedDay } from "@/components/AdminCalendar";
-import { emailEnabled, pendingNotifications } from "@/lib/notifications";
+import { emailEnabled, ownerAlertsConfigured, pendingNotifications } from "@/lib/notifications";
 import type { NotificationRecord } from "@/components/NotificationCenter";
 import { loadBusinessAnalytics, type BusinessAnalytics as BusinessAnalyticsData } from "@/lib/analytics";
 
@@ -164,5 +164,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     count={count} page={page} pageSize={PAGE_SIZE} q={q} status={status} setupError={setupError}
     month={month} calendarBookings={calendarBookings} blockedDates={blockedDates} calendarError={calendarError}
     notificationState={notificationState} notificationRecords={notificationRecords} notificationWarning={notificationWarning}
+    ownerAlertsEnabled={ownerAlertsConfigured()}
     analytics={analytics} analyticsWarning={analyticsWarning}/>;
 }

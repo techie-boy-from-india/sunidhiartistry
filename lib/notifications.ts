@@ -146,7 +146,7 @@ export function ownerAlertsConfigured(): boolean {
   const address=process.env.ADMIN_ALERT_EMAIL?.trim();
   return process.env.ADMIN_NEW_REQUEST_ALERTS === "true" &&
     emailEnabled() && smtpConfigured() &&
-    Boolean(address && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(address));
+    Boolean(address && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address));
 }
 
 export async function enqueueOwnerNewRequest(
