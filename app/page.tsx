@@ -1,12 +1,129 @@
 import Link from "next/link";
-import { ArrowUpRight, BadgeCheck, Heart, ShieldCheck, Sparkles, Timer, Instagram } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarHeart, Check, Crown, Gem, Heart, Instagram, MessageCircle, ShieldCheck, Sparkles, Star } from "lucide-react";
 import Photo from "@/components/Photo";
-import { services,photos,faqs,contact } from "@/lib/site";
-export default function Home(){return <main><section className="hero"><div className="wrap hero-grid"><div className="hero-copy"><span className="chip">✧ PREMIUM BEAUTY STUDIO</span><h1>Where Every Bride<br/><em>Glows Differently.</em></h1><p>Sunidhi Artistry creates elegant, personalised makeup looks for brides, parties and events across Bihar — with premium products and a soft, feminine touch.</p><div className="hero-actions"><Link className="pill" href="/contact#book">BOOK NOW ↗</Link><Link className="pill white" href="/contact">ENQUIRE NOW</Link></div><p className="mini-trust">✦ &nbsp;5+ years of artistry &nbsp; · &nbsp; 500+ happy brides*</p></div><div className="hero-visual"><Photo name="real-bridal-1.webp" alt="Sunidhi Artistry bride in golden bridal attire" className="hero-image" priority/><div className="float-badge">✧ &nbsp; Elegant bridal artistry</div></div></div></section>
-<section className="intro narrow"><span className="chip">MEET THE ARTIST</span><h2>Hi, I&apos;m <em>Sunidhi</em> — and I believe every face has its own poetry.</h2><p>A professional makeup artist specialising in bridal, party and event makeup. I create elegant, personalised looks that enhance natural beauty and confidence — so you walk into your moment feeling completely, beautifully you.</p><Link className="inline-link" href="/about">READ MY STORY ↗</Link></section>
-<section className="services-home blush-block"><div className="wrap centered"><span className="chip">OUR SERVICES</span><h2>Crafted For Every <em>Beautiful</em><br/>Occasion</h2><p>From your wedding day to your favourite celebration — a signature look for every moment.</p><div className="service-grid">{services.map(s=><Link href="/services" className="service-card" key={s.name}><Photo name={s.image} alt={s.name+" work by Sunidhi Artistry"}/><div><span className="card-icon">✿</span><h3>{s.name}</h3><p>{s.desc}</p></div></Link>)}</div><Link href="/services" className="pill dark">VIEW ALL SERVICES & PRICING ↗</Link></div></section>
-<section className="why wrap centered"><span className="chip">WHY CHOOSE SUNIDHI ARTISTRY</span><h2>The Details That Make <em>All The Difference</em></h2><div className="why-grid"><div><BadgeCheck/><h3>5+ Years&apos; Experience</h3><p>Hundreds of brides and clients styled across Bihar and beyond.</p></div><div><ShieldCheck/><h3>Premium Products Only</h3><p>MAC, Huda, Charlotte Tilbury, Bobbi Brown & more.</p></div><div><Heart/><h3>Personalised Looks</h3><p>Every face deserves its own story.</p></div><div><Timer/><h3>Always On Time</h3><p>Your big day runs on your schedule.</p></div></div></section>
-<section className="feature blush-block"><div className="wrap feature-grid"><Photo name="real-bridal-6.webp" alt="Bridal makeup photo by Sunidhi Artistry" className="feature-image"/><div><span className="chip">WHY CLIENTS TRUST US</span><h2>Beauty You Can <em>Trust.</em> Service You Will Remember.</h2><ul className="tick-list">{["Hygienic, sanitised brushes for every client","Skin-friendly, dermatologist-tested products","Custom consultation before every booking","Long-lasting, HD camera-ready finish","Discreet, professional, women-led team"].map(t=><li key={t}>✦ {t}</li>)}</ul></div></div></section>
-<section className="instagram-block centered wrap"><span className="chip">THE BEAUTY EDIT</span><h2>Latest From Our <em>Instagram</em></h2><p>Behind the brush — daily beauty inspiration.</p><div className="mini-gallery">{photos.slice(0,6).map(p=><Link href="/portfolio" key={p.src}><Photo name={p.src} alt={p.alt}/></Link>)}</div><a className="pill white" href={contact.instagram} target="_blank" rel="noopener noreferrer"><Instagram size={15}/> FOLLOW {contact.instagramHandle}</a></section>
-<section className="faq-block wrap centered"><span className="chip">FAQ</span><h2>Everything You Want To <em>Know</em></h2><div className="faq-list">{faqs.map(f=><details key={f.q}><summary>{f.q}<span>＋</span></summary><p>{f.a}</p></details>)}</div></section>
-<section className="cta-wrap wrap"><div className="cta centered"><Sparkles/><h2>Ready to feel breathtakingly<br/><em>beautiful?</em></h2><p>Let&apos;s create the look you&apos;ll remember forever. Your special day deserves something special.</p><div><Link className="pill white" href="/contact#book">BOOK YOUR SLOT <ArrowUpRight size={14}/></Link><a href={contact.whatsapp} className="pill ghost">CHAT ON WHATSAPP ↗</a></div></div></section></main>}
+import { contact, faqs, photos, services } from "@/lib/site";
+
+const promises = [
+  { icon: Gem, title: "Elegance, made personal", copy: "A beauty look that feels like you, only more radiant." },
+  { icon: ShieldCheck, title: "Every detail matters", copy: "Thoughtful preparation, professional products and a calm approach." },
+  { icon: Heart, title: "Moments made memorable", copy: "From your first consultation to the last beautiful detail." }
+];
+
+export default function Home() {
+  return <main className="lux-home">
+    <section className="lux-hero" aria-labelledby="lux-hero-title">
+      <div className="lux-orb lux-orb-left" aria-hidden="true"/><div className="lux-orb lux-orb-right" aria-hidden="true"/>
+      <div className="wrap lux-hero-grid">
+        <div className="lux-hero-content">
+          <div className="lux-hero-kicker"><span className="lux-kicker-star">✳</span><span>THE ART OF BEING BEAUTIFULLY YOU</span><span className="lux-kicker-line"/></div>
+          <h1 id="lux-hero-title">For every <span className="lux-script-line"><em>beautiful</em><i aria-hidden="true">✦</i></span> moment.</h1>
+          <p>Timeless bridal beauty. An unmistakably personal touch. Discover makeup artistry that celebrates <strong>you</strong> and the moments worth remembering.</p>
+          <div className="lux-hero-actions">
+            <Link href="/contact#book" className="lux-button lux-button-primary">Make a booking request <ArrowUpRight size={18}/></Link>
+            <Link href="/portfolio" className="lux-button lux-button-outline">Explore the portfolio <ArrowRight size={18}/></Link>
+          </div>
+          <div className="lux-hero-foot"><span className="lux-foot-icon"><Sparkles size={17}/></span><span><strong>Sunidhi Artistry</strong><small>Bridal · Engagement · Celebrations · Nawada, Bihar</small></span></div>
+        </div>
+        <div className="lux-hero-stage">
+          <div className="lux-stage-halo" aria-hidden="true"/>
+          <div className="lux-stage-frame"><Photo name="real-bridal-1.webp" alt="Bridal makeup look by Sunidhi Artistry" className="lux-primary-portrait" priority/></div>
+          <div className="lux-stage-secondary"><Photo name="real-bridal-4.webp" alt="Elegant engagement makeup by Sunidhi Artistry" className="lux-secondary-portrait"/></div>
+          <div className="lux-stage-note"><span>✦</span><span>THE SUNIDHI SIGNATURE<small>Soft elegance, lasting impressions</small></span></div>
+          <div className="lux-stage-number" aria-hidden="true">01 / BEAUTY</div>
+        </div>
+      </div>
+      <div className="lux-hero-bottom wrap"><span>MODERN ARTISTRY. TIMELESS FEELING.</span><a href="#signature" aria-label="Discover our signature looks">DISCOVER MORE <ArrowDownRight size={16}/></a></div>
+    </section>
+
+    <div className="lux-ticker" aria-hidden="true"><div className="lux-ticker-track">
+      {Array.from({length:2},(_,i)=><span key={i}>BRIDAL BEAUTY <b>✦</b> PERSONAL STYLE <b>✦</b> ENGAGEMENT GLAM <b>✦</b> OCCASION MAKEUP <b>✦</b> BEAUTY WITH HEART <b>✦</b></span>)}
+    </div></div>
+
+    <section className="wrap lux-intro" id="signature">
+      <div className="lux-intro-symbol" aria-hidden="true">✳</div>
+      <span className="lux-eyebrow">THE SUNIDHI ARTISTRY EXPERIENCE</span>
+      <h2>Not just makeup.<br/><em>A feeling you&apos;ll remember.</em></h2>
+      <p>Every face tells a different story. Our work is to honour yours — with soft refinement, thoughtful details and a look that feels entirely your own.</p>
+      <Link href="/about" className="lux-inline-link">Meet the artist <ArrowUpRight size={16}/></Link>
+    </section>
+
+    <section className="lux-signatures">
+      <div className="wrap">
+        <div className="lux-section-heading">
+          <div><span className="lux-eyebrow">DISCOVER YOUR SIGNATURE LOOK</span><h2>Beautifully crafted,<br/><em>just for you.</em></h2></div>
+          <div className="lux-section-side"><p>Every occasion deserves its own kind of magic. Explore our most-loved makeup experiences.</p>
+            <Link href="/services" className="lux-inline-link">All services & prices <ArrowUpRight size={16}/></Link></div>
+        </div>
+        <div className="lux-service-grid">
+          {services.slice(0,3).map((service,index)=><Link key={service.name} href="/services" className="lux-service-card">
+            <Photo name={service.image} alt={service.name+" by Sunidhi Artistry"} className="lux-service-photo"/>
+            <div className="lux-service-number">0{index+1}</div>
+            <div className="lux-service-info"><span>{service.category.toUpperCase()} · SUNIDHI ARTISTRY</span>
+              <div><h3>{service.name}</h3><span className="lux-service-arrow"><ArrowUpRight size={21}/></span></div>
+              <p>{service.desc}</p><small>{service.price}</small>
+            </div>
+          </Link>)}
+        </div>
+        <div className="lux-service-note"><Sparkles size={17}/> Looking for party, reception or photoshoot glam? <Link href="/services">Explore every service <ArrowUpRight size={14}/></Link></div>
+      </div>
+    </section>
+
+    <section className="wrap lux-story" aria-labelledby="lux-story-heading">
+      <div className="lux-story-gallery">
+        <Photo name="real-bridal-6.webp" alt="Bridal makeup in a delicate pink drape" className="lux-story-main-photo"/>
+        <div className="lux-story-minor"><Photo name="real-party-2.webp" alt="Editorial party makeup by Sunidhi Artistry" className="lux-story-small-photo"/></div>
+        <div className="lux-story-seal">BEAUTY<br/><span>that is</span><br/>UNIQUELY YOU <Sparkles size={15}/></div>
+      </div>
+      <div className="lux-story-content">
+        <span className="lux-eyebrow">BEHIND THE BRUSH</span>
+        <h2 id="lux-story-heading">A little artistry.<br/>A lot of <em>heart.</em></h2>
+        <p>I believe your makeup should make you feel more like yourself, not someone else. That&apos;s why every look begins with listening, understanding and creating together.</p>
+        <div className="lux-story-quote"><span>“</span><p>Because the most beautiful version of you is still <em>you.</em></p></div>
+        <Link href="/about" className="lux-button lux-button-primary">Get to know Sunidhi <ArrowUpRight size={18}/></Link>
+      </div>
+    </section>
+
+    <section className="lux-promise-section">
+      <div className="wrap"><div className="lux-centered-heading"><span className="lux-eyebrow">THE LITTLE THINGS</span><h2>Beauty lives <em>in the details.</em></h2></div>
+        <div className="lux-promise-grid">{promises.map(({icon:Icon,title,copy},i)=><div className="lux-promise" key={title}>
+          <span className="lux-promise-index">0{i+1} — THE PROMISE</span><span className="lux-promise-icon"><Icon size={27}/></span>
+          <h3>{title}</h3><p>{copy}</p>
+        </div>)}</div>
+      </div>
+    </section>
+
+    <section className="wrap lux-gallery">
+      <div className="lux-section-heading">
+        <div><span className="lux-eyebrow">THE BEAUTY DIARY</span><h2>Real faces.<br/><em>Unforgettable moments.</em></h2></div>
+        <div className="lux-section-side"><p>A few lovely faces and stories from behind our brushes.</p>
+          <Link href="/portfolio" className="lux-inline-link">View the full portfolio <ArrowUpRight size={16}/></Link></div>
+      </div>
+      <div className="lux-gallery-grid">
+        {photos.slice(0,4).map((photo,i)=><Link href="/portfolio" className={"lux-gallery-item lux-gallery-item-"+i} key={photo.src} aria-label={"View "+photo.category+" makeup portfolio"}>
+          <Photo name={photo.src} alt={photo.alt}/><span>{photo.category} <ArrowUpRight size={15}/></span>
+        </Link>)}
+      </div>
+      <div className="lux-gallery-bottom"><span>THE MOMENTS, THE MAGIC, THE MEMORIES.</span>
+        <a href={contact.instagram} target="_blank" rel="noopener noreferrer"><Instagram size={17}/> FOLLOW THE BEAUTY DIARY <ArrowUpRight size={15}/></a></div>
+    </section>
+
+    <section className="lux-faq-section"><div className="wrap lux-faq-grid">
+      <div className="lux-faq-intro"><span className="lux-eyebrow">A LITTLE PEACE OF MIND</span><h2>You have questions.<br/><em>We have answers.</em></h2><p>All the little things you might want to know before booking your special day.</p>
+        <div className="lux-faq-flower" aria-hidden="true">✺</div>
+      </div>
+      <div className="lux-faq-list">{faqs.map((faq,i)=><details key={faq.q}>
+        <summary><span>{String(i+1).padStart(2,"0")}</span>{faq.q}<b>＋</b></summary><p>{faq.a}</p>
+      </details>)}</div>
+    </div></section>
+
+    <section className="wrap lux-end-section"><div className="lux-end-card">
+      <div className="lux-end-orb" aria-hidden="true"/><span className="lux-eyebrow">LET'S MAKE MAGIC</span>
+      <Star size={28} fill="currentColor" className="lux-end-star" aria-hidden="true"/>
+      <h2>Your story deserves<br/><em>beautiful details.</em></h2>
+      <p>Tell us about your special day and we&apos;ll help you make it even more memorable. Dates are confirmed after consultation and availability checks.</p>
+      <div className="lux-end-actions"><Link href="/contact#book" className="lux-button lux-button-white">Request your date <CalendarHeart size={18}/></Link>
+        <a href={contact.whatsapp} target="_blank" rel="noopener noreferrer" className="lux-button lux-button-translucent"><MessageCircle size={18}/> Chat on WhatsApp</a></div>
+      <span className="lux-end-small"><Check size={14}/> Thoughtful artistry, made for your moment</span>
+    </div></section>
+  </main>;
+}
