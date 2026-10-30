@@ -6,6 +6,7 @@ import type { CalendarBooking, BlockedDay } from "@/components/AdminCalendar";
 import { emailEnabled, ownerAlertsConfigured, pendingNotifications } from "@/lib/notifications";
 import type { NotificationRecord } from "@/components/NotificationCenter";
 import { loadBusinessAnalytics, type BusinessAnalytics as BusinessAnalyticsData } from "@/lib/analytics";
+import { getCms, type CmsData, type CmsVersions } from "@/lib/cms";
 
 export const dynamic = "force-dynamic";
 type Search = { tab?: string; q?: string; page?: string; status?: string; month?: string };
@@ -14,7 +15,7 @@ const PAGE_SIZE = 25;
 export default async function AdminPage({ searchParams }: { searchParams: Promise<Search> }) {
   if (!await isAdmin()) redirect("/admin/login");
   const params = await searchParams;
-  const tab = ["overview","calendar","bookings","enquiries","customers","analytics","notifications"].includes(params.tab || "") ? params.tab! : "overview";
+  const tab = ["overview","calendar","bookings","enquiries","customers","analytics","notifications","cms"].includes(params.tab || "") ? params.tab! : "overview";
   const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).formatToParts(new Date());
   const currentMonth = parts.find(p => p.type === "year")!.value + "-" + parts.find(p => p.type === "month")!.value;
   const candidateMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(params.month || "") ? params.month! : currentMonth;
@@ -34,6 +35,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   let notificationWarning = "";
   let analytics:BusinessAnalyticsData|null = null;
   let analyticsWarning = "";
+  let cms:CmsData|null=null;
+  let cmsVersions:CmsVersions|null=null;
+  let cmsReady=false;
   let count = 0;
   let setupError = "";
   try {
@@ -52,6 +56,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       totalBookings: bookingTotals.total, pendingBookings: bookingTotals.pending,
       confirmedBookings: bookingTotals.confirmed, customers: enquiryTotals.customers
     };
+    if (tab === "cms") {
+      const content=await getCms();
+      cms=content.data;cmsVersions=content.versions;cmsReady=content.ready;
+    }
     if (tab === "analytics") {
       try { analytics=await loadBusinessAnalytics(); }
       catch { analyticsWarning="Unable to calculate reports from this database. Verify the Phase 3 migration and Neon connection."; }
@@ -165,5 +173,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     month={month} calendarBookings={calendarBookings} blockedDates={blockedDates} calendarError={calendarError}
     notificationState={notificationState} notificationRecords={notificationRecords} notificationWarning={notificationWarning}
     ownerAlertsEnabled={ownerAlertsConfigured()}
-    analytics={analytics} analyticsWarning={analyticsWarning}/>;
+    analytics={analytics} analyticsWarning={analyticsWarning}
+    cms={cms} cmsVersions={cmsVersions} cmsReady={cmsReady}/>;
 }

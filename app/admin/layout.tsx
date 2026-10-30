@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./admin.css";
 import "./email-notification.css";
 import "./analytics.css";
+import "./cms.css";
 
 export const metadata: Metadata = {
   title: "Business Dashboard | Sunidhi Artistry",

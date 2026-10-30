@@ -7,14 +7,16 @@ import BookingTools from "@/components/BookingTools";
 import AdminCalendar, { type CalendarBooking, type BlockedDay } from "@/components/AdminCalendar";
 import NotificationCenter, { type NotificationRecord } from "@/components/NotificationCenter";
 import BusinessAnalytics from "@/components/BusinessAnalytics";
+import CmsEditor from "@/components/CmsEditor";
+import type { CmsData,CmsVersions } from "@/lib/cms";
 import type { BusinessAnalytics as BusinessAnalyticsData } from "@/lib/analytics";
-import { ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3, LayoutDashboard, LogOut, Mail, Menu, MessageCircle, Search, Sparkles, TrendingUp, UserRound, Users, X } from "lucide-react";
+import { ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3, LayoutDashboard, LogOut, Mail, Menu, MessageCircle, Search, Sparkles, TrendingUp, UserRound, Users, X, PencilLine } from "lucide-react";
 
 export type AdminStats = { totalEnquiries: number; newEnquiries: number; totalBookings: number; pendingBookings: number; confirmedBookings: number; customers: number };
 export type BookingRow = { id: string; status: string; name: string; email: string; phone: string; service: string; eventDate: string | null; message: string; createdAt: string; startTime: string | null; endTime: string | null; totalRupees: number; receivedRupees: number };
 export type EnquiryRow = BookingRow & { requestType: string };
 export type CustomerRow = { email: string; name: string; phone: string; requestCount: number; lastContact: string };
-type Props = { tab: string; stats: AdminStats; bookings: BookingRow[]; enquiries: EnquiryRow[]; customers: CustomerRow[]; count: number; page: number; pageSize: number; q: string; status: string; setupError: string; month: string; calendarBookings: CalendarBooking[]; blockedDates: BlockedDay[]; calendarError: string; notificationState:{enabled:boolean;pending:number;failed:number}; notificationRecords:NotificationRecord[]; notificationWarning:string; ownerAlertsEnabled:boolean; analytics:BusinessAnalyticsData|null; analyticsWarning:string };
+type Props = { tab: string; stats: AdminStats; bookings: BookingRow[]; enquiries: EnquiryRow[]; customers: CustomerRow[]; count: number; page: number; pageSize: number; q: string; status: string; setupError: string; month: string; calendarBookings: CalendarBooking[]; blockedDates: BlockedDay[]; calendarError: string; notificationState:{enabled:boolean;pending:number;failed:number}; notificationRecords:NotificationRecord[]; notificationWarning:string; ownerAlertsEnabled:boolean; analytics:BusinessAnalyticsData|null; analyticsWarning:string; cms:CmsData|null;cmsVersions:CmsVersions|null;cmsReady:boolean };
 const navigation = [
   { key: "overview", text: "Overview", icon: LayoutDashboard },
   { key: "calendar", text: "Calendar", icon: CalendarDays },
@@ -22,6 +24,7 @@ const navigation = [
   { key: "enquiries", text: "Enquiries", icon: MessageCircle },
   { key: "customers", text: "Customers", icon: Users },
   { key: "analytics", text: "Analytics", icon: TrendingUp },
+  { key: "cms", text: "Website CMS", icon: PencilLine },
   { key: "notifications", text: "Emails", icon: Mail }
 ];
 function Badge({ status }: { status: string }) { return <span className={"admin-badge badge-" + status}>{status.replace(/\b\w/g, c => c.toUpperCase())}</span>; }
@@ -30,7 +33,7 @@ function Person({ name, email, phone }: { name: string; email: string; phone: st
 }
 function NoRows({ message }: { message: string }) { return <div className="admin-empty"><Sparkles size={25}/><strong>Nothing here yet</strong><p>{message}</p></div>; }
 
-export default function AdminDashboard({ tab, stats, bookings, enquiries, customers, count, page, pageSize, q, status, setupError, month, calendarBookings, blockedDates, calendarError, notificationState, notificationRecords, notificationWarning, ownerAlertsEnabled, analytics, analyticsWarning }: Props) {
+export default function AdminDashboard({ tab, stats, bookings, enquiries, customers, count, page, pageSize, q, status, setupError, month, calendarBookings, blockedDates, calendarError, notificationState, notificationRecords, notificationWarning, ownerAlertsEnabled, analytics, analyticsWarning, cms, cmsVersions, cmsReady }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState(q);
   const [busy, setBusy] = useState("");
@@ -64,7 +67,7 @@ export default function AdminDashboard({ tab, stats, bookings, enquiries, custom
     await fetch("/api/admin/session", { method: "DELETE" }).catch(() => undefined);
     router.replace("/admin/login"); router.refresh();
   }
-  const tabTitle = ({ overview: "Your business at a glance", calendar: "Your booking calendar", analytics: "Business analytics", notifications: "Email notifications", bookings: "Booking management", enquiries: "Enquiry inbox", customers: "Your customers" } as Record<string,string>)[tab];
+  const tabTitle = ({ overview: "Your business at a glance", calendar: "Your booking calendar", analytics: "Business analytics", cms: "Website content studio", notifications: "Email notifications", bookings: "Booking management", enquiries: "Enquiry inbox", customers: "Your customers" } as Record<string,string>)[tab];
   const statusOptions = tab === "bookings" ? ["all","pending","confirmed","completed","cancelled"] : ["all","new","contacted","quoted","converted","lost"];
   const format = (row: BookingRow) => row.eventDate ? new Date(row.eventDate + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Not provided";
   function tableBookings(rows: BookingRow[]) {
@@ -111,7 +114,7 @@ export default function AdminDashboard({ tab, stats, bookings, enquiries, custom
           <div className="admin-stat"><div><span>CUSTOMERS</span><Users size={19}/></div><strong>{stats.customers}</strong><small>Unique customer emails</small></div>
         </section>
         {notificationState.enabled && (notificationState.pending>0 || notificationState.failed>0) && tab !== "notifications" && <Link href="/admin?tab=notifications" className="admin-notification-alert">✉ {notificationState.pending} pending and {notificationState.failed} failed emails — View Email activity →</Link>}
-        {tab === "analytics" ? <BusinessAnalytics data={analytics} warning={analyticsWarning}/> : tab === "notifications" ? <NotificationCenter records={notificationRecords} enabled={notificationState.enabled} ownerAlertsEnabled={ownerAlertsEnabled} pending={notificationState.pending} failed={notificationState.failed} warning={notificationWarning}/> : tab === "calendar" ? <AdminCalendar month={month} bookings={calendarBookings} blocked={blockedDates} error={calendarError}/> : tab === "overview" ? <>
+        {tab === "cms" && cms && cmsVersions ? <CmsEditor initial={cms} versions={cmsVersions} ready={cmsReady}/> : tab === "analytics" ? <BusinessAnalytics data={analytics} warning={analyticsWarning}/> : tab === "notifications" ? <NotificationCenter records={notificationRecords} enabled={notificationState.enabled} ownerAlertsEnabled={ownerAlertsEnabled} pending={notificationState.pending} failed={notificationState.failed} warning={notificationWarning}/> : tab === "calendar" ? <AdminCalendar month={month} bookings={calendarBookings} blocked={blockedDates} error={calendarError}/> : tab === "overview" ? <>
           <section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-panel-subtitle">BOOKINGS</span><h2>Appointments to review</h2></div><Link href={link("bookings",1,"","all")}>View all bookings <ArrowRight size={17}/></Link></div>{tableBookings(bookings)}</section>
           <section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-panel-subtitle">ENQUIRIES</span><h2>Latest customer messages</h2></div><Link href={link("enquiries",1,"","all")}>View all enquiries <ArrowRight size={17}/></Link></div>{tableEnquiries(enquiries)}</section>
         </> : <>
