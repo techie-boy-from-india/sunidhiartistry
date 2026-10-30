@@ -18,7 +18,7 @@ Premium mobile-first artist website and private booking-management dashboard. Bu
 - Customer directory based on submitted enquiry email; search, filters, pagination
 - Password stored as scrypt hash, httpOnly signed cookie, 8-hour session, same-origin writes, database-backed login attempt throttling
 
-**Not yet implemented:** live calendar availability and double-booking prevention, payment gateway, automated notifications, staff roles, file CMS. Never promise a customer a confirmed slot solely from an online form submission.
+**Status:** calendar and double-booking prevention are implemented in Phase 3, and transactional notifications are available in Phase 4 after configuration. Payment gateway, staff roles and file CMS are not yet implemented. Never promise a customer a confirmed slot solely from an online form submission.
 
 ## Phase 3 — Calendar and manual payment tracking (migration required)
 - New **Calendar** tab: view monthly pending/confirmed/completed appointments and block/unblock individual dates.
@@ -32,55 +32,52 @@ Premium mobile-first artist website and private booking-management dashboard. Bu
 
 **Business logic:** A booking without a start and end time occupies the entire calendar day. Timed bookings conflict only when their ranges overlap. Both confirmed and completed bookings count as occupied. The Calendar displays pending requests, but these do not reserve a slot. A manually blocked day cannot contain a confirmed/completed appointment. Date comparisons are made against stored event dates in the artist's local calendar (Asia/Kolkata). Multi-artist resource capacity is not yet supported.
 
-# Phase 4 — Transactional customer emails (Resend)
+# Phase 4 — Transactional customer emails (Gmail SMTP)
 
-Sunidhi Artistry sends **transactional** customer updates for actual admin changes. Notifications are **off by default** so the existing booking and enquiry workflow continues unchanged until you finish setup.
+Customer updates use **Nodemailer + Gmail SMTP** with an app-specific password. No Resend account, email API provider, or paid custom sending domain is required. Existing booking and enquiry features remain unchanged until emails are explicitly enabled.
 
-## Before enabling
-1. Back up the **Sunidhi Artistry production** Neon database. In Neon SQL Editor, run the entire contents of `db/004_email_notifications.sql` (after migrations 001–003). This creates the `email_notifications` outbox.
-2. Create a Resend account at https://resend.com. Add a sending domain that **you or the client owns**, then configure/verify the DNS records it requests (SPF/DKIM, DMARC recommended). You generally cannot use someone else's `.vercel.app` subdomain as your sender domain.
-3. In Vercel → **Project Settings → Environment Variables (Production)**, set:
-   - `RESEND_API_KEY`: a Resend sending API key (server-only, never prefix NEXT_PUBLIC_).
-   - `EMAIL_FROM`: e.g. `Sunidhi Artistry <bookings@sunidhiartistry.com>` **after the domain is verified**. The address does not need to be an independently logged-in mailbox for sending.
-   - `EMAIL_REPLY_TO`: optional, e.g. the studio's existing email inbox (only if your client wants responses there).
-   - `EMAIL_NOTIFICATIONS_ENABLED=true`: only after the table & provider configuration are ready.
-4. Save settings and **redeploy** Vercel so the environment variables take effect.
+## Setup
 
-**Important for testing:** Resend's starter/test sender can be restricted to your own verified account recipient. To send to arbitrary customers in production, use a verified sender domain. Test with your own inbox before switching on real customer updates. Do not send credentials or API keys in chats/screenshots.
+1. In Neon, back up Sunidhi Artistry's production database. Run the **contents** of `db/004_email_notifications.sql` (after 001–003). It creates a persistent email outbox. If you already ran it for Phase 4, do not rerun needlessly.
+2. Use a Gmail account you control for testing (you do **not** need the client's Gmail login). Enable **2-Step Verification** on that Google account.
+3. Go to https://myaccount.google.com/apppasswords and create an App Password named **Sunidhi Artistry SMTP**. Google will show a **16-character password**. Do not use the Gmail login password. App Passwords can be unavailable for work/school accounts, security-key-only 2FA, or Advanced Protection.
+4. Vercel → Project Settings → Environment Variables → Production:
+   - `SMTP_USER=your-sending-address@gmail.com`
+   - `SMTP_APP_PASSWORD=<16-character Google App Password>` (server-side secret; can be pasted with or without spaces)
+   - `EMAIL_FROM_NAME=Sunidhi Artistry`
+   - `EMAIL_REPLY_TO=` optional; for initial testing you may omit it, so replies go back to the SMTP_USER mailbox.
+   - `EMAIL_NOTIFICATIONS_ENABLED=true` **only after the Neon outbox and SMTP credentials are configured**.
+5. Save and redeploy the Production deployment. The `/admin?tab=notifications` screen is the Email activity tracker.
 
-## What triggers a customer email?
-- Admin changes a booking from its previous status to Pending, Confirmed, Completed, or Cancelled.
-- Admin changes the event date or time (reschedule).
-- Admin changes the agreed total or manually recorded advance/received amount.
-- Admin updates a **general enquiry** to Contacted, Quoted, or Converted. The internal `new` and `lost` labels do **not** send customer mail.
+### Customer triggers
 
-Changing a status to the value it already has won't send a duplicate. Changes are saved to the database **first**; the email event is queued in the **same transaction**. Sending is attempted immediately after the transaction commits. When the provider is unavailable, the event remains queued/failed.
+- Booking status changed by admin: Pending, Confirmed, Completed, Cancelled.
+- Event date/time changed: rescheduling notice.
+- Quote/paid amount changed: a **manual record summary**, not an official payment receipt.
+- General enquiry stage changed to Contacted, Quoted or Converted. Internal New/Lost changes do not email customers.
 
-The admin can review **Admin → Emails** and click **Retry pending emails** (up to 10 per click). The Resend request uses a provider idempotency key per notification event to reduce duplicate sends on retries. The admin UI explicitly says **Accepted**, not delivered: verify delivery in Resend's Emails dashboard.
+Only actual changes trigger an email; saving the same status again will not create a new event.
 
-## Behavior and limitations
-- Customer emails use the `email` field the customer entered on their enquiry or booking form. Mistyped addresses can bounce.
-- New anonymous public requests **do not automatically trigger** an acknowledgement email yet: public forms need stronger anti-bot/rate limits to avoid email abuse.
-- Emails never disclose admin URLs, passwords, private notes, or the API key.
-- Payment updates are **manual record summaries, not receipts**, payment gateway events or automated verification.
-- Existing bookings and enquiries are not backfilled. Older state changes that occurred while notifications were disabled won't trigger emails retroactively.
-- If you turn `EMAIL_NOTIFICATIONS_ENABLED=true` before running 004, the affected admin save will fail rather than silently drop a customer notification. Keep the flag false until setup is complete.
-- If Vercel execution is interrupted after the database commit, email may remain queued. Use Admin → Emails to retry it.
-- Provider idempotency guarantees are time-limited. Monitor statuses and avoid retrying arbitrarily very old uncertain requests without checking Resend activity.
-- Message content is a snapshot of the update at the time it was saved, not live data.
-- Email status shows provider **acceptance**, not final inbox delivery; delivery/bounce webhooks can be added later.
+### Delivery and retry logic
 
-## Smoke tests
-1. Run `npm install && npm run lint && npm run typecheck && npm run build`.
-2. With EMAIL_NOTIFICATIONS_ENABLED **false**, test a booking status change: existing workflow still works with no email.
-3. After migration, verification and flag=true, create a **test booking addressed to your own inbox** and change it to Confirmed: email accepted, recorded under Emails and received in the inbox.
-4. Update the same booking again to Confirmed without changing it: no duplicate.
-5. Change test booking to Cancelled: cancellation email.
-6. Change a pending test booking's event date: reschedule email clarifies that the booking isn't confirmed.
-7. Record test payment/advance amounts: summary email clearly states it's a manually recorded amount.
-8. Simulate provider config temporarily unset on a test deployment; update one test record to create a pending email. Restore config, open Emails and click retry.
-9. Verify unauthorized requests cannot call admin notifications or read the queue.
-10. Review inbox formatting on phone and desktop.
+- The status/enquiry update and its email notification record are committed in the same DB transaction. After commit, the server awaits Gmail SMTP.
+- If SMTP is unavailable, the pending/failed record remains in the outbox; an authenticated owner can use the Emails dashboard to retry up to ten at a time.
+- `sent` means **Gmail SMTP accepted the message**; it is not proof of inbox delivery. Review Gmail's Sent folder, security alerts, and bounce reports.
+- SMTP doesn't offer Resend-style API idempotency: if Gmail accepts a message but the database acknowledgement fails, a manual retry could send a duplicate. Check the Gmail Sent folder before retrying an ambiguous attempt.
+- Gmail is suitable for light transactional use/testing, not bulk newsletters. Google applies account sending limits and can block cloud SMTP logins.
+- Customer-supplied email addresses may be wrong; verify with test addresses first. New public requests do **not** send immediate acknowledgement emails to avoid spam abuse.
+- Gmail may rewrite the From address to the authenticated SMTP_USER mailbox. When the client is ready, replace the temporary developer Gmail/app password with credentials they control, and revoke the old App Password.
+- Never send passwords/app passwords in issues, chats or screenshots and never commit `.env.local`.
+
+### Smoke test
+
+1. `npm run lint && npm run typecheck && npm run build`.
+2. Confirm 004 table exists; SMTP env vars are saved and `EMAIL_NOTIFICATIONS_ENABLED=true`.
+3. Create a test booking using an inbox you control, change Pending → Confirmed, and check Admin → Emails and the recipient inbox.
+4. Change Confirmed → Cancelled, check the cancellation mail.
+5. Reschedule a test appointment and update the payment notes; verify the expected emails.
+6. Save a booking without changing its status; confirm no duplicate event.
+7. Test a general enquiry status → Contacted and confirm its message. Test retry behavior on a staging or test record only.
 
 ## Setup (local and Vercel)
 

@@ -25,7 +25,7 @@ export default function NotificationCenter({records,enabled,pending,failed,warni
       const response=await fetch("/api/admin/notifications/dispatch",{method:"POST",headers:{"Content-Type":"application/json"}});
       const data=await response.json();
       if(!response.ok) throw new Error(data.error || "Unable to process the queue");
-      setResult(`Email provider accepted ${data.accepted} of ${data.attempted} attempted notification(s). Check the status list after refreshing.`);
+      setResult(`Gmail SMTP accepted ${data.accepted} of ${data.attempted} attempted notification(s). Check the status list after refreshing.`);
       router.refresh();
     }catch(e){setIsError(true);setResult(e instanceof Error?e.message:"Unable to process queue");}
     finally{setBusy(false);}
@@ -41,7 +41,7 @@ export default function NotificationCenter({records,enabled,pending,failed,warni
       <div><CheckCircle2 size={20}/><strong>{records.filter(r=>r.status==="sent").length}</strong><span>Accepted (recent list)</span></div>
     </div>
     {warning && <p className="admin-alert" role="alert">{warning}</p>}
-    {!enabled && <p className="notification-hint">Email notifications are currently switched off. Run the email database migration, verify your sending domain and configure Vercel environment variables before enabling.</p>}
+    {!enabled && <p className="notification-hint">Email notifications are currently switched off. Run the email database migration, enable Google 2-Step Verification and configure a Gmail App Password in Vercel before enabling.</p>}
     {enabled && <div className="notification-actions"><button type="button" onClick={retry} disabled={busy||(!pending&&!failed)}><RefreshCcw size={16}/>{busy?"Processing…":"Retry pending emails (up to 10)"}</button>
       <span><ShieldCheck size={16}/> Updates are sent only after an admin saves a real change.</span>
     </div>}
@@ -54,6 +54,6 @@ export default function NotificationCenter({records,enabled,pending,failed,warni
         <td><span className={"notification-status status-"+row.status}>{row.status==="sent"?"Accepted":row.status}</span>{row.status==="failed"&&row.lastError&&<small className="notification-error">{row.lastError}</small>}</td>
         <td className="admin-cell-muted">{row.createdAt}</td>
       </tr>)}</tbody></table></div> : <div className="admin-empty"><Mail size={23}/><strong>No emails have been queued yet</strong><p>Change a test booking status to trigger your first notification.</p></div>)}
-    <p className="notification-footer-note"><ArrowRight size={14}/> Accepted means the provider received the email request; delivery depends on the recipient mail server and can be checked in Resend.</p>
+    <p className="notification-footer-note"><ArrowRight size={14}/> Accepted means the provider received the email request; delivery depends on the recipient mail server. Check the sending Gmail account’s Sent folder and any bounce messages.</p>
   </section>;
 }
