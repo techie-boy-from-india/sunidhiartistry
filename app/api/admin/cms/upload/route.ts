@@ -31,7 +31,7 @@ export async function POST(req:NextRequest) {
   if(!matchesType(bytes,file.type))return fail("Image file signature doesn't match its type.",400);
   const ext=file.type==="image/jpeg"?"jpg":file.type==="image/png"?"png":"webp";
   try {
-    const blob=await put("sunidhi-portfolio/"+randomUUID()+"."+ext,bytes,{
+    const blob=await put("sunidhi-portfolio/"+randomUUID()+"."+ext,Buffer.from(bytes),{
       access:"public",contentType:file.type,addRandomSuffix:true
     });
     return NextResponse.json({ok:true,url:blob.url},{headers:{"Cache-Control":"no-store"}});
