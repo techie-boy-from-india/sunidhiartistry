@@ -129,7 +129,7 @@ export async function enqueueEnquiry(tx:Tx,id:string,event:EnquiryEmailEvent):Pr
 }
 export function smtpConfigured(): boolean {
   const email=process.env.SMTP_USER?.trim();
-  return Boolean(email && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) &&
+  return Boolean(email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
     process.env.SMTP_APP_PASSWORD?.trim());
 }
 
@@ -146,7 +146,7 @@ export async function sendQueuedEmail(id:string|null):Promise<DeliveryResult> {
   if (!emailEnabled()) return "disabled";
   if (!id || !smtpConfigured()) return "queued";
   const smtpUser=process.env.SMTP_USER!.trim();
-  const appPassword=process.env.SMTP_APP_PASSWORD!.replace(/\\s/g,"");
+  const appPassword=process.env.SMTP_APP_PASSWORD!.replace(/\s/g,"");
   // Atomic claim prevents two simultaneous API handlers sending the same event.
   let row: EmailRow | undefined;
   try {
