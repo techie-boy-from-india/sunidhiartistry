@@ -3,6 +3,8 @@ import { isAdmin } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import AdminDashboard, { type BookingRow, type EnquiryRow, type CustomerRow, type AdminStats } from "@/components/AdminDashboard";
 import type { CalendarBooking, BlockedDay } from "@/components/AdminCalendar";
+import { emailEnabled, pendingNotifications } from "@/lib/notifications";
+import type { NotificationRecord } from "@/components/NotificationCenter";
 
 export const dynamic = "force-dynamic";
 type Search = { tab?: string; q?: string; page?: string; status?: string; month?: string };
@@ -11,7 +13,7 @@ const PAGE_SIZE = 25;
 export default async function AdminPage({ searchParams }: { searchParams: Promise<Search> }) {
   if (!await isAdmin()) redirect("/admin/login");
   const params = await searchParams;
-  const tab = ["overview","calendar","bookings","enquiries","customers"].includes(params.tab || "") ? params.tab! : "overview";
+  const tab = ["overview","calendar","bookings","enquiries","customers","notifications"].includes(params.tab || "") ? params.tab! : "overview";
   const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).formatToParts(new Date());
   const currentMonth = parts.find(p => p.type === "year")!.value + "-" + parts.find(p => p.type === "month")!.value;
   const candidateMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(params.month || "") ? params.month! : currentMonth;
@@ -26,6 +28,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   let bookings: BookingRow[] = [], enquiries: EnquiryRow[] = [], customers: CustomerRow[] = [];
   let calendarBookings: CalendarBooking[] = [], blockedDates: BlockedDay[] = [];
   let calendarError = "";
+  const notificationState = { enabled:emailEnabled(),pending:0,failed:0 };
+  const notificationRecords: NotificationRecord[] = [];
+  let notificationWarning = "";
   let count = 0;
   let setupError = "";
   try {
@@ -110,6 +115,24 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         count = rows.n;
       }
     }
+    if (emailEnabled()) {
+      try {
+        const counts=await pendingNotifications();
+        notificationState.pending=counts.pending;
+        notificationState.failed=counts.failed;
+        if (tab === "notifications") {
+          const recent=await sql<NotificationRecord[]>`
+            SELECT id::text AS id,recipient_email AS "recipientEmail",subject,event_type AS "eventType",
+              status,last_error AS "lastError",
+              to_char(created_at AT TIME ZONE 'Asia/Kolkata','DD Mon YYYY HH12:MI AM') AS "createdAt"
+            FROM email_notifications ORDER BY created_at DESC LIMIT 60
+          `;
+          notificationRecords.push(...recent);
+        }
+      } catch {
+        notificationWarning="Email activity is not available. Run db/004_email_notifications.sql in Neon.";
+      }
+    }
     if (tab === "customers") {
       customers = await sql<CustomerRow[]>`
         SELECT lower(email) AS email, (array_agg(name ORDER BY created_at DESC))[1] AS name,
@@ -132,5 +155,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   }
   return <AdminDashboard tab={tab} stats={stats} bookings={bookings} enquiries={enquiries} customers={customers}
     count={count} page={page} pageSize={PAGE_SIZE} q={q} status={status} setupError={setupError}
-    month={month} calendarBookings={calendarBookings} blockedDates={blockedDates} calendarError={calendarError}/>;
+    month={month} calendarBookings={calendarBookings} blockedDates={blockedDates} calendarError={calendarError}
+    notificationState={notificationState} notificationRecords={notificationRecords} notificationWarning={notificationWarning}/>;
 }

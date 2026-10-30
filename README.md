@@ -32,6 +32,56 @@ Premium mobile-first artist website and private booking-management dashboard. Bu
 
 **Business logic:** A booking without a start and end time occupies the entire calendar day. Timed bookings conflict only when their ranges overlap. Both confirmed and completed bookings count as occupied. The Calendar displays pending requests, but these do not reserve a slot. A manually blocked day cannot contain a confirmed/completed appointment. Date comparisons are made against stored event dates in the artist's local calendar (Asia/Kolkata). Multi-artist resource capacity is not yet supported.
 
+# Phase 4 — Transactional customer emails (Resend)
+
+Sunidhi Artistry sends **transactional** customer updates for actual admin changes. Notifications are **off by default** so the existing booking and enquiry workflow continues unchanged until you finish setup.
+
+## Before enabling
+1. Back up the **Sunidhi Artistry production** Neon database. In Neon SQL Editor, run the entire contents of `db/004_email_notifications.sql` (after migrations 001–003). This creates the `email_notifications` outbox.
+2. Create a Resend account at https://resend.com. Add a sending domain that **you or the client owns**, then configure/verify the DNS records it requests (SPF/DKIM, DMARC recommended). You generally cannot use someone else's `.vercel.app` subdomain as your sender domain.
+3. In Vercel → **Project Settings → Environment Variables (Production)**, set:
+   - `RESEND_API_KEY`: a Resend sending API key (server-only, never prefix NEXT_PUBLIC_).
+   - `EMAIL_FROM`: e.g. `Sunidhi Artistry <bookings@sunidhiartistry.com>` **after the domain is verified**. The address does not need to be an independently logged-in mailbox for sending.
+   - `EMAIL_REPLY_TO`: optional, e.g. the studio's existing email inbox (only if your client wants responses there).
+   - `EMAIL_NOTIFICATIONS_ENABLED=true`: only after the table & provider configuration are ready.
+4. Save settings and **redeploy** Vercel so the environment variables take effect.
+
+**Important for testing:** Resend's starter/test sender can be restricted to your own verified account recipient. To send to arbitrary customers in production, use a verified sender domain. Test with your own inbox before switching on real customer updates. Do not send credentials or API keys in chats/screenshots.
+
+## What triggers a customer email?
+- Admin changes a booking from its previous status to Pending, Confirmed, Completed, or Cancelled.
+- Admin changes the event date or time (reschedule).
+- Admin changes the agreed total or manually recorded advance/received amount.
+- Admin updates a **general enquiry** to Contacted, Quoted, or Converted. The internal `new` and `lost` labels do **not** send customer mail.
+
+Changing a status to the value it already has won't send a duplicate. Changes are saved to the database **first**; the email event is queued in the **same transaction**. Sending is attempted immediately after the transaction commits. When the provider is unavailable, the event remains queued/failed.
+
+The admin can review **Admin → Emails** and click **Retry pending emails** (up to 10 per click). The Resend request uses a provider idempotency key per notification event to reduce duplicate sends on retries. The admin UI explicitly says **Accepted**, not delivered: verify delivery in Resend's Emails dashboard.
+
+## Behavior and limitations
+- Customer emails use the `email` field the customer entered on their enquiry or booking form. Mistyped addresses can bounce.
+- New anonymous public requests **do not automatically trigger** an acknowledgement email yet: public forms need stronger anti-bot/rate limits to avoid email abuse.
+- Emails never disclose admin URLs, passwords, private notes, or the API key.
+- Payment updates are **manual record summaries, not receipts**, payment gateway events or automated verification.
+- Existing bookings and enquiries are not backfilled. Older state changes that occurred while notifications were disabled won't trigger emails retroactively.
+- If you turn `EMAIL_NOTIFICATIONS_ENABLED=true` before running 004, the affected admin save will fail rather than silently drop a customer notification. Keep the flag false until setup is complete.
+- If Vercel execution is interrupted after the database commit, email may remain queued. Use Admin → Emails to retry it.
+- Provider idempotency guarantees are time-limited. Monitor statuses and avoid retrying arbitrarily very old uncertain requests without checking Resend activity.
+- Message content is a snapshot of the update at the time it was saved, not live data.
+- Email status shows provider **acceptance**, not final inbox delivery; delivery/bounce webhooks can be added later.
+
+## Smoke tests
+1. Run `npm install && npm run lint && npm run typecheck && npm run build`.
+2. With EMAIL_NOTIFICATIONS_ENABLED **false**, test a booking status change: existing workflow still works with no email.
+3. After migration, verification and flag=true, create a **test booking addressed to your own inbox** and change it to Confirmed: email accepted, recorded under Emails and received in the inbox.
+4. Update the same booking again to Confirmed without changing it: no duplicate.
+5. Change test booking to Cancelled: cancellation email.
+6. Change a pending test booking's event date: reschedule email clarifies that the booking isn't confirmed.
+7. Record test payment/advance amounts: summary email clearly states it's a manually recorded amount.
+8. Simulate provider config temporarily unset on a test deployment; update one test record to create a pending email. Restore config, open Emails and click retry.
+9. Verify unauthorized requests cannot call admin notifications or read the queue.
+10. Review inbox formatting on phone and desktop.
+
 ## Setup (local and Vercel)
 
 1. Install Node.js 20.9+ (Node 22 LTS recommended).

@@ -31,7 +31,10 @@ export default function BookingTools({ row }: { row: BookingRow }) {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to save");
-      setMessage(kind === "schedule" ? "Appointment date/time saved." : "Manual payment notes saved.");
+      const base=kind === "schedule" ? "Appointment date/time saved." : "Manual payment notes saved.";
+      setMessage(base+(result.email === "sent" ? " Email accepted for delivery." :
+        result.email === "queued" ? " Customer email queued; check Emails in the admin menu." :
+        result.email === "disabled" ? " Customer email notifications are disabled." : ""));
       router.refresh();
     } catch (e) { setProblem(true); setMessage(e instanceof Error ? e.message : "Unable to save changes."); }
     finally { setSaving(""); }
