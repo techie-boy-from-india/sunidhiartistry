@@ -1,2 +1,2 @@
 import type { MetadataRoute } from "next";
-export default function sitemap(): MetadataRoute.Sitemap { return [{ url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000", lastModified: new Date(), changeFrequency: "monthly", priority: 1 }]; }
+export default function sitemap():MetadataRoute.Sitemap{const base=process.env.NEXT_PUBLIC_SITE_URL||"https://sunidhiartistry-38na.vercel.app";return ["/","/services","/portfolio","/about","/contact"].map((p,i)=>({url:base+p,lastModified:new Date(),changeFrequency:"monthly" as const,priority:i===0?1:0.7}));}
