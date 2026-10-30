@@ -45,7 +45,7 @@ export function validSession(token: string | undefined): boolean {
     const payload: unknown = JSON.parse(Buffer.from(data, "base64url").toString());
     if (!payload || typeof payload !== "object") return false;
     const { email, expires } = payload as Partial<Session>;
-    return typeof email === "string" && email === process.env.ADMIN_EMAIL?.toLowerCase() && typeof expires === "number" && expires > Date.now() && expires <= Date.now() + SESSION_AGE_SECONDS * 1000;
+    return typeof email === "string" && email === process.env.ADMIN_EMAIL?.trim().toLowerCase() && typeof expires === "number" && expires > Date.now() && expires <= Date.now() + SESSION_AGE_SECONDS * 1000;
   } catch { return false; }
 }
 export async function isAdmin() {
