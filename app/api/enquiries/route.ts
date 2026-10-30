@@ -1,16 +1,16 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getCms, visibleCms } from "@/lib/cms";
 import { enqueueOwnerNewRequest, ownerAlertsConfigured, sendQueuedEmail } from "@/lib/notifications";
 import { enforceSubmissionLimits, SubmissionLimited } from "@/lib/public-submission-limit";
 
 export const runtime = "nodejs";
+const services = ["Bridal Makeup","Engagement Makeup","Reception Makeup","Party Makeup","Photoshoot Makeup","Event Makeup"] as const;
 const schema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.email().max(255),
   phone: z.string().trim().regex(/^[+\d\s()-]{7,20}$/),
-  service: z.string().trim().min(1).max(120),
+  service: z.enum(services),
   eventDate: z.union([z.iso.date(), z.literal("")]).optional(),
   requestType: z.enum(["booking", "enquiry"]).default("enquiry"),
   message: z.string().trim().max(1500).default(""),
@@ -29,8 +29,6 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return error("Please check the enquiry details.", 400);
   const value = parsed.data;
-  const {data}=await getCms();
-  if (!visibleCms(data).services.some(s=>s.name===value.service)) return error("Please choose an available service.",400);
   if (value.website) return NextResponse.json({ ok: true }, { status: 202 });
   if (value.requestType === "booking" && !value.eventDate) return error("Please select an event date.", 400);
   if (value.eventDate && value.eventDate < new Date().toISOString().slice(0, 10)) return error("Please select a future event date.", 400);

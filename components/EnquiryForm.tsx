@@ -1,7 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
-
-export default function EnquiryForm({services}:{services:string[]}) {
+import { services } from "@/lib/site";
+export default function EnquiryForm() {
   const [tab, setTab] = useState<"booking" | "enquiry">("booking");
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
@@ -38,7 +38,7 @@ export default function EnquiryForm({services}:{services:string[]}) {
         </div>
         <label>Email address<input type="email" autoComplete="email" required name="email" placeholder="you@example.com"/></label>
         <div className="form-two">
-          <label>Service<select required name="service" defaultValue=""><option value="" disabled>Select a service</option>{services.map(s => <option key={s}>{s}</option>)}</select></label>
+          <label>Service<select required name="service" defaultValue=""><option value="" disabled>Select a service</option>{services.map(s => <option key={s.name}>{s.name}</option>)}</select></label>
           <label>Event date<input type="date" required={tab === "booking"} name="eventDate" min={new Date().toISOString().slice(0,10)}/></label>
         </div>
         <label>Tell us about your event<textarea name="message" rows={4} maxLength={1400} placeholder="Venue, occasion, and any details…"/></label>
