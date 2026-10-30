@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "@/lib/db";
 import { contact, services, packages, photos } from "@/lib/site";
 
@@ -26,7 +27,7 @@ export const cmsDefaults:CmsData={
   gallery:photos.map(x=>({...x,active:true})),testimonials:[]
 };
 export type CmsVersions = Record<CmsSection,number>;
-export async function getCms():Promise<{data:CmsData;versions:CmsVersions;ready:boolean}> {
+export const getCms=cache(async ():Promise<{data:CmsData;versions:CmsVersions;ready:boolean}> => {
   const result:{data:CmsData;versions:CmsVersions;ready:boolean}={
     data:structuredClone(cmsDefaults),
     versions:{settings:0,copy:0,services:0,packages:0,gallery:0,testimonials:0},ready:false
@@ -44,7 +45,7 @@ export async function getCms():Promise<{data:CmsData;versions:CmsVersions;ready:
     result.ready=true;
   } catch { /* CMS hasn't been migrated yet: keep the existing live website. */ }
   return result;
-}
+});
 export function visibleCms(data:CmsData) {
   return {
     services:data.services.filter(s=>s.active),
