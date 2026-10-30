@@ -19,7 +19,7 @@ export default function SiteFooter() {
         <p>Modern bridal beauty with a personal touch. Thoughtfully crafted looks for the moments you never want to forget.</p>
         <span className="lux-footer-signature">Made with love in Bihar ♡</span>
       </div>
-      <div><h3>EXPLORE</h3><Link href="/">Home</Link><Link href="/services">Services & pricing</Link><Link href="/portfolio">Our work</Link><Link href="/about">Meet the artist</Link></div>
+      <div><h3>EXPLORE</h3><Link href="/">Home</Link><Link href="/services">Services & pricing</Link><Link href="/portfolio">Our work</Link><Link href="/about">Meet the artist</Link><Link href="/bridal-makeup-nawada">Bridal makeup Nawada</Link><Link href="/party-makeup-nawada">Party makeup Nawada</Link></div>
       <div><h3>GET IN TOUCH</h3><a href={"mailto:" + contact.email}><Mail size={15}/>{contact.email}</a>
         <a href={contact.whatsapp} target="_blank" rel="noopener noreferrer"><MessageCircle size={15}/>{contact.phone}</a>
         <span className="lux-footer-address"><MapPin size={15}/>{contact.city}</span></div>

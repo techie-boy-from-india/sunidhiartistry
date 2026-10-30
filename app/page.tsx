@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarHeart, Check, Gem, Heart, Instagram, MessageCircle, ShieldCheck, Sparkles, Star } from "lucide-react";
 import Photo from "@/components/Photo";
+import JsonLd from "@/components/JsonLd";
+import { businessSchema, websiteSchema } from "@/lib/seo";
 import { contact, faqs, photos, services } from "@/lib/site";
 
 const promises = [
@@ -11,6 +13,7 @@ const promises = [
 
 export default function Home() {
   return <main className="lux-home">
+    <JsonLd data={[businessSchema(),websiteSchema()]}/>
     <section className="lux-hero" aria-labelledby="lux-hero-title">
       <div className="lux-orb lux-orb-left" aria-hidden="true"/><div className="lux-orb lux-orb-right" aria-hidden="true"/>
       <div className="wrap lux-hero-grid">
@@ -45,6 +48,22 @@ export default function Home() {
       <h2>Not just makeup.<br/><em>A feeling you&apos;ll remember.</em></h2>
       <p>Every face tells a different story. Our work is to honour yours — with soft refinement, thoughtful details and a look that feels entirely your own.</p>
       <Link href="/about" className="lux-inline-link">Meet the artist <ArrowUpRight size={16}/></Link>
+    </section>
+
+    <section className="wrap local-home-seo" aria-labelledby="nawada-makeup-title">
+      <div className="local-home-glass">
+        <div><span className="lux-eyebrow">YOUR LOCAL MAKEUP ARTIST</span>
+          <h2 id="nawada-makeup-title">Bridal Makeup Artist in <em>Nawada, Bihar</em></h2>
+          <p>Planning a wedding or celebration in Nawada? Sunidhi Artistry offers personalised bridal makeup, engagement looks, reception makeup and party-ready styles. Tell us your event date, venue and preferred look; we&apos;ll discuss the right service and confirm availability before accepting your booking.</p>
+          <p>Wedding makeup enquiries from other parts of Bihar are welcome, with travel and availability discussed individually.</p>
+        </div>
+        <div className="local-home-links">
+          <Link href="/bridal-makeup-nawada">Bridal makeup in Nawada <ArrowUpRight size={18}/></Link>
+          <Link href="/party-makeup-nawada">Party &amp; engagement makeup <ArrowUpRight size={18}/></Link>
+          <Link href="/services">Makeup packages &amp; prices <ArrowUpRight size={18}/></Link>
+          <Link href="/contact#book">Ask about a date <ArrowUpRight size={18}/></Link>
+        </div>
+      </div>
     </section>
 
     <section className="lux-signatures">
